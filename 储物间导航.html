@@ -1,0 +1,1061 @@
+<!DOCTYPE html>
+<html lang="zh-CN">
+<head>
+  <meta charset="UTF-8">
+  <meta name="viewport" content="width=device-width, initial-scale=1.0">
+  <title>阿虚同学 · 森系储物间导航</title>
+  <link rel="icon" href="data:image/svg+xml,%3Csvg xmlns='http://www.w3.org/2000/svg' viewBox='0 0 32 32'%3E%3Crect width='32' height='32' rx='8' fill='%236fae5f'/%3E%3Ctext x='16' y='23' font-size='18' text-anchor='middle'%3E%F0%9F%8C%BF%3C/text%3E%3C/svg%3E">
+  <!-- 引入 SheetJS 用于处理 Excel -->
+  <script src="https://cdnjs.cloudflare.com/ajax/libs/xlsx/0.18.5/xlsx.full.min.js"></script>
+  <style>
+    /* ================= 基础重置与全局 ================= */
+    * { margin: 0; padding: 0; box-sizing: border-box; }
+
+    :root {
+      --bg-1: #f4ede1;
+      --bg-2: #e7f0e4;
+      --panel-bg: rgba(255, 251, 244, 0.78);
+      --panel-border: rgba(150, 120, 85, 0.20);
+      --text-main: #4a4336;
+      --text-muted: #9b8f7c;
+      --text-hover: #2f2a20;
+      --accent-color: #6fae5f;
+      --accent-glow: rgba(111, 174, 95, 0.35);
+      --clay: #d98c4a;
+      --danger-color: #e0795f;
+      --edit-color: #cf9b4a;
+      --excel-color: #5e9c6b;
+      --excel-hover: #6fae5f;
+    }
+
+    body {
+      min-height: 100vh;
+      background: linear-gradient(145deg, var(--bg-1) 0%, var(--bg-2) 100%);
+      font-family: 'Segoe UI', 'Inter', system-ui, -apple-system, sans-serif;
+      color: var(--text-main);
+      padding: 2rem 1rem;
+      display: flex;
+      flex-direction: column;
+      align-items: center;
+      justify-content: flex-start;
+      -webkit-font-smoothing: antialiased;
+      position: relative;
+      overflow-x: hidden;
+    }
+
+    body::before {
+      content: '';
+      position: fixed; inset: 0; z-index: -1;
+      background:
+        radial-gradient(60% 50% at 12% 6%, rgba(111, 174, 95, 0.18), transparent 70%),
+        radial-gradient(55% 45% at 90% 94%, rgba(217, 140, 74, 0.16), transparent 70%);
+      pointer-events: none;
+    }
+
+    ::-webkit-scrollbar { width: 8px; height: 8px; }
+    ::-webkit-scrollbar-track { background: rgba(150, 120, 85, 0.12); }
+    ::-webkit-scrollbar-thumb { background: rgba(150, 120, 85, 0.45); border-radius: 4px; }
+    ::-webkit-scrollbar-thumb:hover { background: rgba(111, 174, 95, 0.7); }
+
+    .nav-container {
+      display: flex;
+      gap: 1.5rem;
+      width: min(1400px, 100%);
+      margin-top: 1rem;
+    }
+
+    /* 卡片基础样式（毛玻璃效果） */
+    .glass-panel {
+      background: var(--panel-bg);
+      backdrop-filter: blur(14px) saturate(160%);
+      -webkit-backdrop-filter: blur(14px) saturate(160%);
+      border: 1px solid var(--panel-border);
+      border-radius: 14px;
+      box-shadow: 0 12px 30px -12px rgba(74, 60, 40, 0.25),
+                  0 0 0 1px rgba(255, 255, 255, 0.45) inset;
+    }
+
+    /* ================= 顶部品牌区 ================= */
+    .page-header {
+      width: min(1400px, 100%);
+      margin-bottom: 0.4rem;
+    }
+    .brand { display: flex; align-items: center; gap: 14px; }
+    .brand-logo {
+      font-size: 2rem; line-height: 1;
+      filter: drop-shadow(0 4px 8px rgba(111, 174, 95, 0.35));
+    }
+    .brand-text h1 {
+      font-size: 1.5rem; color: var(--text-hover);
+      letter-spacing: 0.5px; display: flex; align-items: center; gap: 8px;
+    }
+    .brand-text p { margin-top: 4px; font-size: 0.85rem; color: var(--text-muted); }
+    .brand-text #totalCount { color: var(--accent-color); font-weight: 700; }
+
+    /* ================= 左侧边栏 ================= */
+    .sidebar {
+      width: 260px;
+      flex-shrink: 0;
+      padding: 1.5rem 1.2rem;
+      display: flex;
+      flex-direction: column;
+      gap: 1.8rem;
+      max-height: 85vh;
+      overflow-y: auto;
+    }
+
+    .side-group h3 {
+      font-size: 1rem;
+      color: var(--text-hover);
+      margin-bottom: 0.8rem;
+      padding-bottom: 0.6rem;
+      border-bottom: 1px solid rgba(111, 174, 95, 0.25);
+      display: flex;
+      align-items: center;
+      gap: 8px;
+      position: relative;
+    }
+
+    .side-group h3::before {
+      content: '';
+      display: block;
+      width: 4px; height: 14px;
+      background: var(--accent-color);
+      border-radius: 2px;
+      box-shadow: 0 0 8px var(--accent-glow);
+    }
+
+    .edit-category-btn {
+      display: none;
+      font-size: 0.7rem;
+      color: var(--edit-color);
+      cursor: pointer;
+      margin-left: auto;
+      background: rgba(207, 155, 74, 0.15);
+      padding: 2px 6px;
+      border-radius: 4px;
+      border: 1px solid rgba(207, 155, 74, 0.35);
+    }
+    .side-group h3:hover .edit-category-btn,
+    .dir-label:hover .edit-category-btn { display: inline-block; }
+
+    .side-links { display: flex; flex-wrap: wrap; gap: 0.6rem 0.8rem; }
+
+    .side-links a {
+      color: var(--text-muted);
+      text-decoration: none;
+      font-size: 0.85rem;
+      transition: all 0.2s ease;
+      position: relative;
+      display: inline-block;
+    }
+
+    .side-links a:hover {
+      color: var(--text-hover);
+      transform: translateX(2px);
+    }
+
+    /* ================= 右侧内容区 ================= */
+    .main-content {
+      flex: 1;
+      display: flex;
+      flex-direction: column;
+      gap: 1.5rem;
+      min-width: 0;
+    }
+
+    .top-query { padding: 1.5rem; position: relative; }
+
+    .top-query::before {
+      content: '🌿 热门资源 · 快捷搜索';
+      position: absolute;
+      top: -12px; left: 20px;
+      background: #f0e7d8;
+      color: var(--accent-color);
+      font-size: 0.75rem;
+      padding: 4px 16px;
+      border-radius: 8px 8px 0 0;
+      border: 1px solid var(--panel-border);
+      border-bottom: none;
+      box-shadow: 0 -4px 10px rgba(74, 60, 40, 0.12);
+    }
+
+    .query-grid {
+      display: grid;
+      grid-template-columns: repeat(auto-fill, minmax(120px, 1fr));
+      gap: 1rem;
+      margin-top: 0.5rem;
+    }
+
+    /* 搜索框 & 图标 & 空状态 & Toast */
+    .search-bar { margin-bottom: 1.1rem; }
+    .search-bar input {
+      width: 100%; padding: 12px 16px; font-size: 0.95rem;
+      background: rgba(255, 255, 255, 0.6);
+      border: 1px solid rgba(150, 120, 85, 0.3);
+      border-radius: 10px; color: var(--text-main); outline: none;
+      transition: border-color 0.2s, box-shadow 0.2s;
+    }
+    .search-bar input:focus {
+      border-color: var(--accent-color);
+      box-shadow: 0 0 12px rgba(111, 174, 95, 0.25);
+    }
+    .fav {
+      width: 14px; height: 14px; border-radius: 3px;
+      margin-right: 6px; vertical-align: middle;
+      object-fit: cover; background: rgba(120, 100, 70, 0.08);
+    }
+    .link-text { vertical-align: middle; }
+    .query-item .fav { margin-right: 0; }
+    .no-result {
+      text-align: center; color: var(--text-muted);
+      padding: 2rem; font-size: 0.9rem; display: none;
+    }
+    .toast {
+      position: fixed; left: 50%; bottom: 40px;
+      transform: translateX(-50%) translateY(20px);
+      background: var(--excel-color); color: #fff;
+      padding: 12px 24px; border-radius: 10px; font-size: 0.9rem;
+      box-shadow: 0 10px 30px rgba(0,0,0,0.5);
+      opacity: 0; pointer-events: none;
+      transition: opacity 0.3s, transform 0.3s; z-index: 2000;
+    }
+    .toast.show { opacity: 1; transform: translateX(-50%) translateY(0); }
+
+    .query-item {
+      display: flex;
+      align-items: center;
+      gap: 8px;
+      color: var(--text-main);
+      text-decoration: none;
+      font-size: 0.9rem;
+      padding: 8px 12px;
+      background: rgba(255, 255, 255, 0.55);
+      border-radius: 8px;
+      border: 1px solid transparent;
+      transition: all 0.25s cubic-bezier(0.2, 0.9, 0.4, 1.2);
+    }
+
+    .query-item:hover {
+      background: rgba(111, 174, 95, 0.15);
+      border-color: rgba(111, 174, 95, 0.4);
+      color: var(--text-hover);
+      transform: translateY(-2px);
+      box-shadow: 0 6px 15px -5px rgba(74, 60, 40, 0.4), 0 0 12px var(--accent-glow);
+    }
+
+    .query-item .dot {
+      width: 5px; height: 5px;
+      background: var(--accent-color);
+      border-radius: 50%;
+      box-shadow: 0 0 6px var(--accent-color);
+      flex-shrink: 0;
+    }
+
+    .site-directory {
+      padding: 1.8rem;
+      display: flex;
+      flex-direction: column;
+      gap: 1.2rem;
+    }
+
+    .dir-row {
+      display: flex;
+      align-items: flex-start;
+      gap: 1rem;
+      padding-bottom: 1rem;
+      border-bottom: 1px dashed rgba(111, 174, 95, 0.18);
+    }
+
+    .dir-row:last-child { border-bottom: none; padding-bottom: 0; }
+
+    .dir-label {
+      width: 90px;
+      flex-shrink: 0;
+      font-size: 0.9rem;
+      font-weight: 600;
+      color: #5e8d4f;
+      display: flex;
+      align-items: center;
+      gap: 6px;
+      padding-top: 2px;
+      position: relative;
+    }
+
+    .dir-links {
+      flex: 1;
+      display: flex;
+      flex-wrap: wrap;
+      gap: 0.6rem 1.2rem;
+      min-width: 0;
+    }
+
+    .dir-links a {
+      color: var(--text-muted);
+      text-decoration: none;
+      font-size: 0.85rem;
+      transition: all 0.2s ease;
+      position: relative;
+      display: inline-block;
+    }
+
+    .dir-links a:hover {
+      color: var(--text-hover);
+    }
+
+    /* ================= 悬浮操作按钮组 ================= */
+    .link-wrapper { position: relative; display: inline-flex; align-items: center; }
+
+    .action-icons {
+      display: none;
+      position: absolute;
+      top: -12px; right: -15px;
+      gap: 4px;
+      z-index: 10;
+    }
+    .link-wrapper:hover .action-icons { display: flex; }
+
+    .action-btn {
+      width: 18px; height: 18px;
+      border-radius: 50%;
+      font-size: 10px;
+      line-height: 18px;
+      text-align: center;
+      cursor: pointer;
+      box-shadow: 0 2px 5px rgba(0,0,0,0.5);
+      font-weight: bold;
+      transition: transform 0.2s;
+    }
+    .action-btn:hover { transform: scale(1.2); }
+    .btn-edit-link { background: var(--edit-color); color: #000; }
+    .btn-delete-link { background: var(--danger-color); color: #fff; }
+
+    .add-btn {
+      background: transparent;
+      border: 1px dashed rgba(111, 174, 95, 0.45);
+      color: rgba(111, 174, 95, 0.9);
+      border-radius: 6px;
+      padding: 4px 8px;
+      font-size: 0.75rem;
+      cursor: pointer;
+      display: inline-flex;
+      align-items: center;
+      justify-content: center;
+      transition: all 0.2s;
+      margin-left: auto;
+    }
+    .add-btn:hover {
+      background: rgba(111, 174, 95, 0.15);
+      color: var(--text-hover);
+      border-color: var(--accent-color);
+      box-shadow: 0 0 10px var(--accent-glow);
+    }
+
+    .global-add-btn {
+      margin-top: 1rem;
+      width: 100%;
+      padding: 10px;
+      border-radius: 8px;
+      border: 1px dashed var(--accent-color);
+      color: var(--accent-color);
+      background: rgba(111, 174, 95, 0.06);
+    }
+    .global-add-btn:hover { background: rgba(111, 174, 95, 0.18); }
+
+    /* ================= 顶部操作按钮（与搜索框同行） ================= */
+    .top-header {
+      display: flex;
+      align-items: center;
+      gap: 12px;
+      margin-bottom: 1.1rem;
+    }
+    .top-header .search-bar { flex: 1; margin-bottom: 0; }
+
+    .top-actions {
+      display: flex;
+      gap: 8px;
+      flex-shrink: 0;
+    }
+
+    .btn-action {
+      padding: 9px 14px;
+      border-radius: 8px;
+      font-size: 0.8rem;
+      font-weight: 600;
+      cursor: pointer;
+      display: inline-flex;
+      align-items: center;
+      justify-content: center;
+      gap: 6px;
+      border: 1px solid rgba(150, 120, 85, 0.25);
+      transition: all 0.2s;
+      white-space: nowrap;
+    }
+
+    .btn-export { background: var(--excel-color); color: #fff; }
+    .btn-export:hover { background: var(--excel-hover); box-shadow: 0 4px 14px rgba(94, 156, 107, 0.4); }
+
+    .btn-import {
+      background: transparent;
+      color: var(--text-muted);
+      border: 1px dashed rgba(111, 174, 95, 0.45);
+    }
+    .btn-import:hover { color: var(--text-hover); border-color: var(--accent-color); background: rgba(111, 174, 95, 0.12); }
+
+    .btn-add {
+      background: rgba(111, 174, 95, 0.15);
+      color: var(--accent-color);
+      border: 1px solid rgba(111, 174, 95, 0.45);
+    }
+    .btn-add:hover { background: var(--accent-color); color: #fff; box-shadow: 0 4px 14px var(--accent-glow); }
+
+    /* 拖拽时的全局遮罩提示 */
+    .drag-overlay {
+      position: fixed;
+      inset: 0;
+      background: rgba(74, 60, 40, 0.45);
+      backdrop-filter: blur(8px);
+      display: flex;
+      justify-content: center;
+      align-items: center;
+      z-index: 999;
+      opacity: 0;
+      pointer-events: none;
+      transition: opacity 0.2s;
+    }
+    .drag-overlay.active { opacity: 1; pointer-events: auto; }
+    .drag-overlay-content {
+      background: var(--panel-bg);
+      border: 2px dashed var(--accent-color);
+      border-radius: 16px;
+      padding: 3rem 5rem;
+      text-align: center;
+      box-shadow: 0 20px 50px rgba(74, 60, 40, 0.4), 0 0 40px var(--accent-glow);
+      pointer-events: none;
+    }
+    .drag-overlay-content h2 { color: var(--text-hover); font-size: 1.5rem; margin-bottom: 1rem; }
+    .drag-overlay-content p { color: var(--text-muted); }
+
+    /* ================= 弹窗样式 ================= */
+    .modal-overlay {
+      position: fixed; inset: 0;
+      background: rgba(0, 0, 0, 0.6);
+      backdrop-filter: blur(4px);
+      display: flex; justify-content: center; align-items: center;
+      z-index: 1000;
+      opacity: 0; pointer-events: none;
+      transition: opacity 0.3s ease;
+    }
+    .modal-overlay.active { opacity: 1; pointer-events: auto; }
+
+    .modal-content {
+      background: #fbf6ec;
+      border: 1px solid var(--panel-border);
+      border-radius: 12px;
+      padding: 2rem;
+      width: 90%; max-width: 400px;
+      box-shadow: 0 20px 50px rgba(74, 60, 40, 0.4), 0 0 30px rgba(111, 174, 95, 0.2);
+      transform: translateY(20px);
+      transition: transform 0.3s cubic-bezier(0.2, 0.9, 0.4, 1.2);
+    }
+    .modal-overlay.active .modal-content { transform: translateY(0); }
+
+    .modal-content h3 { margin-bottom: 1.5rem; color: var(--text-hover); font-size: 1.2rem; }
+    .form-group { margin-bottom: 1rem; }
+    .form-group label { display: block; font-size: 0.85rem; color: var(--text-muted); margin-bottom: 0.5rem; }
+    .form-group input, .form-group select {
+      width: 100%; padding: 10px 12px;
+      background: rgba(255, 255, 255, 0.7);
+      border: 1px solid rgba(150, 120, 85, 0.3);
+      border-radius: 6px; color: var(--text-main); font-size: 0.9rem;
+      outline: none; transition: border-color 0.2s;
+    }
+    .form-group input:focus, .form-group select:focus {
+      border-color: var(--accent-color);
+      box-shadow: 0 0 10px rgba(111, 174, 95, 0.2);
+    }
+    .modal-actions { display: flex; justify-content: flex-end; gap: 10px; margin-top: 1.5rem; }
+    .btn { padding: 8px 16px; border-radius: 6px; cursor: pointer; font-size: 0.9rem; border: none; transition: all 0.2s; }
+    .btn-cancel { background: transparent; color: var(--text-muted); border: 1px solid rgba(150, 120, 85, 0.25); }
+    .btn-cancel:hover { background: rgba(150, 120, 85, 0.08); }
+    .btn-submit { background: var(--accent-color); color: #fff; box-shadow: 0 4px 10px var(--accent-glow); }
+    .btn-submit:hover { background: #5a9a4d; transform: translateY(-1px); }
+
+    @media (max-width: 900px) {
+      .nav-container { flex-direction: column; }
+      .sidebar { width: 100%; max-height: none; flex-direction: row; flex-wrap: wrap; }
+      .side-group { flex: 1; min-width: 200px; }
+      .dir-row { flex-direction: column; align-items: flex-start; gap: 0.6rem; }
+      .dir-label { width: auto; }
+      .top-header { flex-direction: column; align-items: stretch; }
+      .top-actions { justify-content: flex-end; }
+      .drag-overlay-content { padding: 2rem; width: 90%; }
+    }
+    @media (max-width: 600px) {
+      body { padding: 6rem 0.5rem 1rem 0.5rem; }
+      .query-grid { grid-template-columns: repeat(2, 1fr); }
+    }
+  </style>
+</head>
+<body>
+
+  <!-- 拖拽时的全局遮罩提示 -->
+  <div class="drag-overlay" id="dragOverlay">
+    <div class="drag-overlay-content">
+      <h2>📥 松开鼠标导入 Excel 文件</h2>
+      <p>支持 .xlsx 或 .xls 格式</p>
+    </div>
+  </div>
+
+  <!-- 轻提示 Toast -->
+  <div class="toast" id="toast"></div>
+
+  <header class="page-header">
+    <div class="brand">
+      <span class="brand-logo">🌿</span>
+      <div class="brand-text">
+        <h1>阿虚同学 · 储物间导航</h1>
+        <p>你的森系网址收纳站 · 共 <span id="totalCount">0</span> 个站点</p>
+      </div>
+    </div>
+  </header>
+
+  <div class="nav-container" id="app">
+    <!-- ================= 左侧分类 ================= -->
+    <aside class="sidebar glass-panel" id="sidebar"></aside>
+
+    <!-- ================= 右侧主内容 ================= -->
+    <main class="main-content">
+      
+      <!-- 顶部查询 -->
+      <section class="top-query glass-panel">
+        <div class="top-header">
+          <div class="search-bar">
+            <input type="text" id="searchInput" placeholder="🔍 搜索全部导航（名称或网址）…" autocomplete="off">
+          </div>
+          <div class="top-actions">
+            <button class="btn-action btn-add" onclick="openNewLinkModal()" title="手动添加导航链接">＋ 添加</button>
+            <button class="btn-action btn-export" onclick="exportToExcel()" title="导出全部导航数据为 Excel">⬇️ 导出</button>
+            <label class="btn-action btn-import" id="importBtn" title="点击上传，或将 Excel 文件拖到页面任意位置">
+              ⬆️ 导入
+              <input type="file" id="excelUpload" accept=".xlsx, .xls" style="display: none;" onchange="importFromExcel(event)">
+            </label>
+          </div>
+        </div>
+        <div class="query-grid" id="queryGrid"></div>
+      </section>
+
+      <!-- 底部大全 -->
+      <section class="site-directory glass-panel" id="directoryPanel"></section>
+      <div class="no-result" id="noResult">🔍 没有匹配的导航项</div>
+    </main>
+  </div>
+
+  <!-- 弹窗 1：添加/编辑链接 -->
+  <div class="modal-overlay" id="linkModal">
+    <div class="modal-content">
+      <h3 id="linkModalTitle">添加链接</h3>
+      <div class="form-group" id="categorySelectGroup">
+        <label>选择分类</label>
+        <select id="targetCategory"></select>
+      </div>
+      <div class="form-group">
+        <label>网站名称</label>
+        <input type="text" id="siteName" placeholder="例如: 百度" autocomplete="off">
+      </div>
+      <div class="form-group">
+        <label>网站链接</label>
+        <input type="text" id="siteUrl" placeholder="https://..." autocomplete="off">
+      </div>
+      <div class="modal-actions">
+        <button class="btn btn-cancel" onclick="closeModal('linkModal')">取消</button>
+        <button class="btn btn-submit" id="submitLinkBtn">确认</button>
+      </div>
+    </div>
+  </div>
+
+  <!-- 弹窗 2：修改分类名称 / 添加分类 -->
+  <div class="modal-overlay" id="categoryModal">
+    <div class="modal-content">
+      <h3 id="categoryModalTitle">修改分类</h3>
+      <div class="form-group">
+        <label>分类名称 (支持 Emoji)</label>
+        <input type="text" id="categoryName" placeholder="例如: 📺 影视" autocomplete="off">
+      </div>
+      <div class="modal-actions">
+        <button class="btn btn-cancel" onclick="closeModal('categoryModal')">取消</button>
+        <button class="btn btn-submit" id="submitCategoryBtn">确认</button>
+      </div>
+    </div>
+  </div>
+
+  <script>
+    // ================= 默认初始数据 (完全提取自您的静态代码) =================
+    const defaultData = {
+      sidebar: [
+        { title: "影视动漫", items: [
+          { name: "低端影视", url: "https://ddys.pro" }, { name: "LIBVIO", url: "https://www.libvio.me" },
+          { name: "厂长资源", url: "https://www.czzy.tv" }, { name: "樱花动漫", url: "http://www.yinghuadm.com" },
+          { name: "哔嘀影视", url: "https://www.bdys01.com" }
+        ]},
+        { title: "电子书/漫画", items: [
+          { name: "Z-Library", url: "https://zh.z-lib.gs" }, { name: "鸠摩搜书", url: "https://www.jiumodiary.com" },
+          { name: "漫画柜", url: "https://www.manhuagui.com" }, { name: "拷贝漫画", url: "https://copymanga.site" }
+        ]},
+        { title: "电脑/手机软件", items: [
+          { name: "果核剥壳", url: "https://www.ghxi.com" }, { name: "423Down", url: "https://www.423down.com" },
+          { name: "吾爱破解", url: "https://www.52pojie.cn" }, { name: "F-Droid", url: "https://f-droid.org" }
+        ]}
+      ],
+      query: [
+        { name: "磁力搜索", url: "https://cilisousuo.com" }, { name: "阿里云盘", url: "https://www.alipan.com" },
+        { name: "夸克网盘", url: "https://pan.quark.cn" }, { name: "百度网盘", url: "https://pan.baidu.com" },
+        { name: "在线PDF", url: "https://www.ilovepdf.com/zh-cn" }, { name: "格式转换", url: "https://convertio.co/zh/" },
+        { name: "PPT模板", url: "https://www.1ppt.com" }, { name: "简历模板", url: "https://www.jianlibang.com" }
+      ],
+      directory: [
+        { label: "📺 影视", items: [
+          { name: "低端影视", url: "https://ddys.pro" }, { name: "LIBVIO", url: "https://www.libvio.me" },
+          { name: "厂长资源", url: "https://www.czzy.tv" }, { name: "哔嘀影视", url: "https://www.bdys01.com" },
+          { name: "樱花动漫", url: "http://www.yinghuadm.com" }
+        ]},
+        { label: "📚 阅读", items: [
+          { name: "Z-Library", url: "https://zh.z-lib.gs" }, { name: "鸠摩搜书", url: "https://www.jiumodiary.com" },
+          { name: "漫画柜", url: "https://www.manhuagui.com" }, { name: "拷贝漫画", url: "https://copymanga.site" }
+        ]},
+        { label: "💻 软件", items: [
+          { name: "果核剥壳", url: "https://www.ghxi.com" }, { name: "423Down", url: "https://www.423down.com" },
+          { name: "吾爱破解", url: "https://www.52pojie.cn" }, { name: "F-Droid", url: "https://f-droid.org" },
+          { name: "APKPure", url: "https://apkpure.com" }
+        ]},
+        { label: "🤖 AI", items: [
+          { name: "ChatGPT", url: "https://chat.openai.com" }, { name: "Claude", url: "https://claude.ai" },
+          { name: "Kimi", url: "https://kimi.moonshot.cn" }, { name: "通义千问", url: "https://tongyi.aliyun.com" },
+          { name: "文心一言", url: "https://yiyan.baidu.com" }
+        ]},
+        { label: "🎓 学习", items: [
+          { name: "中国大学MOOC", url: "https://www.icourse163.org" }, { name: "学堂在线", url: "https://www.xuetangx.com" },
+          { name: "考试酷", url: "https://www.examcoo.com" }, { name: "粉笔网", url: "https://www.fenbi.com" }
+        ]},
+        { label: "🛠️ 工具", items: [
+          { name: "Convertio", url: "https://convertio.co/zh/" }, { name: "ILovePDF", url: "https://www.ilovepdf.com/zh-cn" },
+          { name: "第一PPT", url: "https://www.1ppt.com" }, { name: "稿定设计", url: "https://www.gaoding.com" }
+        ]}
+      ]
+    };
+
+    let navData;
+    try {
+      const stored = localStorage.getItem('myNavData_v7');
+      navData = stored ? JSON.parse(stored) : JSON.parse(JSON.stringify(defaultData));
+    } catch (e) {
+      navData = JSON.parse(JSON.stringify(defaultData));
+    }
+
+    function saveData() {
+      try { localStorage.setItem('myNavData_v7', JSON.stringify(navData)); } catch(e) {}
+    }
+
+    // ================= 操作状态变量 =================
+    let currentEditLink = null; 
+    let currentEditCategory = null; 
+
+    // ================= 工具函数 =================
+    function siteFavicon(url) {
+      try { return 'https://icons.duckduckgo.com/ip3/' + new URL(url).hostname + '.ico'; }
+      catch (e) { return ''; }
+    }
+    function linkInner(item) {
+      const fav = siteFavicon(item.url);
+      const img = fav
+        ? '<img class="fav" loading="lazy" src="' + fav + '" alt="" onerror="this.style.visibility=\'hidden\'">'
+        : '';
+      return img + '<span class="link-text">' + item.name + '</span>';
+    }
+    let toastTimer;
+    function showToast(msg) {
+      const t = document.getElementById('toast');
+      if (!t) return;
+      t.textContent = msg;
+      t.classList.add('show');
+      clearTimeout(toastTimer);
+      toastTimer = setTimeout(() => t.classList.remove('show'), 2200);
+    }
+
+    // ================= 渲染函数 =================
+    function renderSidebar() {
+      const sidebar = document.getElementById('sidebar');
+      sidebar.innerHTML = '';
+      navData.sidebar.forEach((group, gIdx) => {
+        const groupDiv = document.createElement('div');
+        groupDiv.className = 'side-group';
+        
+        const titleHTML = `
+          <h3>
+            ${group.title}
+            <span class="edit-category-btn" onclick="openCategoryModal('sidebar', ${gIdx})">✏️ 改名</span>
+          </h3>`;
+        
+        const linksHTML = group.items.map((item, iIdx) => `
+          <span class="link-wrapper">
+            <a href="${item.url}" target="_blank">${linkInner(item)}</a>
+            <span class="action-icons">
+              <span class="action-btn btn-edit-link" onclick="openEditLinkModal('sidebar', ${gIdx}, ${iIdx})">✏️</span>
+              <span class="action-btn btn-delete-link" onclick="deleteLink('sidebar', ${gIdx}, ${iIdx})">✕</span>
+            </span>
+          </span>
+        `).join('');
+        
+        groupDiv.innerHTML = titleHTML + `<div class="side-links">${linksHTML}</div>`;
+        sidebar.appendChild(groupDiv);
+      });
+
+      sidebar.innerHTML += `<button class="add-btn global-add-btn" onclick="openNewCategoryModal('sidebar')">+ 新增左侧分类</button>`;
+    }
+
+    function renderQuery() {
+      const grid = document.getElementById('queryGrid');
+      grid.innerHTML = navData.query.map((item, index) => `
+        <span class="link-wrapper">
+          <a href="${item.url}" target="_blank" class="query-item">
+            ${linkInner(item)}
+          </a>
+          <span class="action-icons">
+            <span class="action-btn btn-edit-link" onclick="openEditLinkModal('query', null, ${index})">✏️</span>
+            <span class="action-btn btn-delete-link" onclick="deleteLink('query', null, ${index})">✕</span>
+          </span>
+        </span>
+      `).join('');
+    }
+
+    function renderDirectory() {
+      const directory = document.getElementById('directoryPanel');
+      directory.innerHTML = '';
+      navData.directory.forEach((group, gIdx) => {
+        const rowDiv = document.createElement('div');
+        rowDiv.className = 'dir-row';
+        
+        const labelHTML = `
+          <div class="dir-label">
+            ${group.label}
+            <span class="edit-category-btn" onclick="openCategoryModal('directory', ${gIdx})">✏️</span>
+          </div>`;
+        
+        const linksHTML = group.items.map((item, iIdx) => `
+          <span class="link-wrapper">
+            <a href="${item.url}" target="_blank">${linkInner(item)}</a>
+            <span class="action-icons">
+              <span class="action-btn btn-edit-link" onclick="openEditLinkModal('directory', ${gIdx}, ${iIdx})">✏️</span>
+              <span class="action-btn btn-delete-link" onclick="deleteLink('directory', ${gIdx}, ${iIdx})">✕</span>
+            </span>
+          </span>
+        `).join('');
+
+        rowDiv.innerHTML = `
+          ${labelHTML}
+          <div class="dir-links">${linksHTML}</div>
+          <button class="add-btn" onclick="openNewLinkModal('directory', ${gIdx})">+ 添加链接</button>
+        `;
+        directory.appendChild(rowDiv);
+      });
+
+      directory.innerHTML += `<button class="add-btn global-add-btn" onclick="openNewCategoryModal('directory')">+ 新增酷站分类行</button>`;
+    }
+
+    function renderSelectOptions() {
+      const select = document.getElementById('targetCategory');
+      select.innerHTML = '';
+      navData.sidebar.forEach((group, idx) => {
+        select.innerHTML += `<option value="sidebar-${idx}">左侧栏 - ${group.title}</option>`;
+      });
+      select.innerHTML += `<option value="query">顶部 - 实用查询</option>`;
+      navData.directory.forEach((group, idx) => {
+        select.innerHTML += `<option value="directory-${idx}">酷站大全 - ${group.label}</option>`;
+      });
+    }
+
+    function renderAll() {
+      renderSidebar();
+      renderQuery();
+      renderDirectory();
+      renderSelectOptions();
+      const box = document.getElementById('searchInput');
+      if (box) applyFilter(box.value);
+      const total = navData.sidebar.reduce((s, g) => s + g.items.length, 0)
+        + navData.query.length
+        + navData.directory.reduce((s, g) => s + g.items.length, 0);
+      const tc = document.getElementById('totalCount');
+      if (tc) tc.textContent = total;
+    }
+
+    function applyFilter(kw) {
+      kw = (kw || '').trim().toLowerCase();
+      const wrappers = document.querySelectorAll('.link-wrapper');
+      wrappers.forEach(w => {
+        const a = w.querySelector('a');
+        const txt = (a.textContent + ' ' + (a.getAttribute('href') || '')).toLowerCase();
+        w.style.display = (!kw || txt.includes(kw)) ? '' : 'none';
+      });
+      document.querySelectorAll('#sidebar .side-group').forEach(g => {
+        const any = [...g.querySelectorAll('.link-wrapper')].some(w => w.style.display !== 'none');
+        g.style.display = any ? '' : 'none';
+      });
+      document.querySelectorAll('#directoryPanel .dir-row').forEach(r => {
+        const any = [...r.querySelectorAll('.link-wrapper')].some(w => w.style.display !== 'none');
+        r.style.display = any ? '' : 'none';
+      });
+      const anyVisible = [...wrappers].some(w => w.style.display !== 'none');
+      const nr = document.getElementById('noResult');
+      if (nr) nr.style.display = anyVisible ? 'none' : 'block';
+    }
+
+    // ================= 弹窗控制逻辑 =================
+    function closeModal(id) {
+      document.getElementById(id).classList.remove('active');
+    }
+
+    function openNewLinkModal(type, groupIndex) {
+      currentEditLink = null;
+      document.getElementById('linkModalTitle').innerText = '添加导航内容';
+      document.getElementById('categorySelectGroup').style.display = 'block';
+      document.getElementById('siteName').value = '';
+      document.getElementById('siteUrl').value = '';
+      if (type && groupIndex !== undefined) {
+        document.getElementById('targetCategory').value = `${type}-${groupIndex}`;
+      }
+      document.getElementById('linkModal').classList.add('active');
+      document.getElementById('siteName').focus();
+    }
+
+    function openEditLinkModal(type, groupIndex, itemIndex) {
+      currentEditLink = { type, groupIndex, itemIndex };
+      document.getElementById('linkModalTitle').innerText = '编辑链接';
+      document.getElementById('categorySelectGroup').style.display = 'none';
+      
+      let item;
+      if (type === 'sidebar') item = navData.sidebar[groupIndex].items[itemIndex];
+      else if (type === 'query') item = navData.query[itemIndex];
+      else if (type === 'directory') item = navData.directory[groupIndex].items[itemIndex];
+
+      document.getElementById('siteName').value = item.name;
+      document.getElementById('siteUrl').value = item.url;
+      document.getElementById('linkModal').classList.add('active');
+      document.getElementById('siteName').focus();
+    }
+
+    function openCategoryModal(type, groupIndex) {
+      currentEditCategory = { type, groupIndex, isNew: false };
+      document.getElementById('categoryModalTitle').innerText = '修改分类名称';
+      let title = type === 'sidebar' ? navData.sidebar[groupIndex].title : navData.directory[groupIndex].label;
+      document.getElementById('categoryName').value = title;
+      document.getElementById('categoryModal').classList.add('active');
+      document.getElementById('categoryName').focus();
+    }
+
+    function openNewCategoryModal(type) {
+      currentEditCategory = { type, groupIndex: -1, isNew: true };
+      document.getElementById('categoryModalTitle').innerText = '新增分类';
+      document.getElementById('categoryName').value = '';
+      document.getElementById('categoryName').placeholder = type === 'sidebar' ? '例如: 社交网络' : '例如: 🎮 游戏';
+      document.getElementById('categoryModal').classList.add('active');
+      document.getElementById('categoryName').focus();
+    }
+
+    document.getElementById('submitLinkBtn').addEventListener('click', () => {
+      const name = document.getElementById('siteName').value.trim();
+      let url = document.getElementById('siteUrl').value.trim();
+      if (!name || !url) return showToast('名称和链接不能为空！');
+      if (!/^https?:\/\//i.test(url)) url = 'https://' + url;
+
+      if (currentEditLink) {
+        const { type, groupIndex, itemIndex } = currentEditLink;
+        if (type === 'sidebar') navData.sidebar[groupIndex].items[itemIndex] = { name, url };
+        else if (type === 'query') navData.query[itemIndex] = { name, url };
+        else if (type === 'directory') navData.directory[groupIndex].items[itemIndex] = { name, url };
+      } else {
+        const target = document.getElementById('targetCategory').value;
+        if (target.startsWith('sidebar-')) {
+          navData.sidebar[parseInt(target.split('-')[1])].items.push({ name, url });
+        } else if (target === 'query') {
+          navData.query.push({ name, url });
+        } else if (target.startsWith('directory-')) {
+          navData.directory[parseInt(target.split('-')[1])].items.push({ name, url });
+        }
+      }
+      saveData(); renderAll(); closeModal('linkModal');
+    });
+
+    document.getElementById('submitCategoryBtn').addEventListener('click', () => {
+      const name = document.getElementById('categoryName').value.trim();
+      if (!name) return showToast('分类名称不能为空！');
+
+      if (currentEditCategory.isNew) {
+        if (currentEditCategory.type === 'sidebar') navData.sidebar.push({ title: name, items: [] });
+        else navData.directory.push({ label: name, items: [] });
+      } else {
+        const { type, groupIndex } = currentEditCategory;
+        if (type === 'sidebar') navData.sidebar[groupIndex].title = name;
+        else navData.directory[groupIndex].label = name;
+      }
+      saveData(); renderAll(); closeModal('categoryModal');
+    });
+
+    function deleteLink(type, groupIndex, itemIndex) {
+      if (confirm('确定要删除这个链接吗？')) {
+        if (type === 'sidebar') navData.sidebar[groupIndex].items.splice(itemIndex, 1);
+        else if (type === 'query') navData.query.splice(itemIndex, 1);
+        else if (type === 'directory') navData.directory[groupIndex].items.splice(itemIndex, 1);
+        saveData(); renderAll();
+      }
+    }
+
+    document.querySelectorAll('.modal-overlay').forEach(overlay => {
+      overlay.addEventListener('click', (e) => {
+        if (e.target === overlay) overlay.classList.remove('active');
+      });
+    });
+
+    document.addEventListener('keydown', (e) => {
+      if (e.key === 'Enter') {
+        if (document.getElementById('linkModal').classList.contains('active')) document.getElementById('submitLinkBtn').click();
+        if (document.getElementById('categoryModal').classList.contains('active')) document.getElementById('submitCategoryBtn').click();
+      }
+      if (e.key === '/' && !['INPUT','TEXTAREA','SELECT'].includes(document.activeElement.tagName)
+          && !document.getElementById('linkModal').classList.contains('active')
+          && !document.getElementById('categoryModal').classList.contains('active')) {
+        e.preventDefault();
+        const s = document.getElementById('searchInput');
+        if (s) s.focus();
+      }
+    });
+
+    // ================= Excel 导出 =================
+    function exportToExcel() {
+      const exportRows = [];
+      navData.sidebar.forEach(group => {
+        if (group.items.length === 0) {
+           exportRows.push({ "所在位置": "左侧分类", "分类名称": group.title, "网站名称": "", "网站链接": "" });
+        } else {
+          group.items.forEach(item => exportRows.push({ "所在位置": "左侧分类", "分类名称": group.title, "网站名称": item.name, "网站链接": item.url }));
+        }
+      });
+      navData.query.forEach(item => exportRows.push({ "所在位置": "顶部查询", "分类名称": "实用查询", "网站名称": item.name, "网站链接": item.url }));
+      navData.directory.forEach(group => {
+        if (group.items.length === 0) {
+           exportRows.push({ "所在位置": "酷站大全", "分类名称": group.label, "网站名称": "", "网站链接": "" });
+        } else {
+          group.items.forEach(item => exportRows.push({ "所在位置": "酷站大全", "分类名称": group.label, "网站名称": item.name, "网站链接": item.url }));
+        }
+      });
+
+      const ws = XLSX.utils.json_to_sheet(exportRows);
+      ws['!cols'] = [ { wch: 15 }, { wch: 20 }, { wch: 25 }, { wch: 40 } ];
+      const wb = XLSX.utils.book_new();
+      XLSX.utils.book_append_sheet(wb, ws, "导航数据");
+      XLSX.writeFile(wb, "我的导航数据.xlsx");
+    }
+
+    // ================= Excel 导入 (点击/拖拽) =================
+    function handleExcelFile(file) {
+      if (!file) return;
+      if (!file.name.endsWith('.xlsx') && !file.name.endsWith('.xls')) {
+        return alert('请上传正确的 Excel 文件 (.xlsx 或 .xls)');
+      }
+
+      const reader = new FileReader();
+      reader.onload = function(e) {
+        try {
+          const data = new Uint8Array(e.target.result);
+          const workbook = XLSX.read(data, { type: 'array' });
+          const firstSheet = workbook.SheetNames[0];
+          const rows = XLSX.utils.sheet_to_json(workbook.Sheets[firstSheet]);
+
+          const newData = { sidebar: [], query: [], directory: [] };
+
+          function getOrCreateGroup(arr, name, isSidebar) {
+            let group = arr.find(g => (isSidebar ? g.title : g.label) === name);
+            if (!group) {
+              group = isSidebar ? { title: name, items: [] } : { label: name, items: [] };
+              arr.push(group);
+            }
+            return group;
+          }
+
+          rows.forEach(row => {
+            const location = row["所在位置"];
+            const categoryName = row["分类名称"] || "未命名分类";
+            const siteName = row["网站名称"];
+            const siteUrl = row["网站链接"];
+
+            if (location === "左侧分类") {
+              const group = getOrCreateGroup(newData.sidebar, categoryName, true);
+              if (siteName && siteUrl) group.items.push({ name: siteName, url: siteUrl });
+            } else if (location === "顶部查询") {
+              if (siteName && siteUrl) newData.query.push({ name: siteName, url: siteUrl });
+            } else if (location === "酷站大全") {
+              const group = getOrCreateGroup(newData.directory, categoryName, false);
+              if (siteName && siteUrl) group.items.push({ name: siteName, url: siteUrl });
+            }
+          });
+
+          navData = newData;
+          saveData();
+          renderAll();
+          showToast('Excel 数据导入成功！');
+        } catch (error) {
+          console.error(error);
+          alert('导入失败，请确保文件格式正确（需为导出的 .xlsx 文件）。');
+        } finally {
+          document.getElementById('excelUpload').value = ''; 
+        }
+      };
+      reader.readAsArrayBuffer(file);
+    }
+
+    function importFromExcel(event) {
+      handleExcelFile(event.target.files[0]);
+    }
+
+    // 拖拽事件绑定
+    const importBtn = document.getElementById('importBtn');
+    const dragOverlay = document.getElementById('dragOverlay');
+
+    ['dragenter', 'dragover', 'dragleave', 'drop'].forEach(eventName => {
+      document.body.addEventListener(eventName, e => {
+        e.preventDefault();
+        e.stopPropagation();
+      }, false);
+    });
+
+    ['dragenter', 'dragover'].forEach(eventName => {
+      document.body.addEventListener(eventName, (e) => {
+        if (e.dataTransfer && Array.from(e.dataTransfer.types || []).includes('Files')) {
+          dragOverlay.classList.add('active');
+        }
+      }, false);
+    });
+
+    ['dragleave', 'drop'].forEach(eventName => {
+      document.body.addEventListener(eventName, (e) => {
+        // 避免鼠标移出窗口时触发
+        if (e.relatedTarget === null || (e.clientX === 0 && e.clientY === 0)) {
+          dragOverlay.classList.remove('active');
+        }
+      }, false);
+    });
+
+    document.body.addEventListener('drop', (e) => {
+      dragOverlay.classList.remove('active');
+      const files = e.dataTransfer.files;
+      if (files.length > 0) {
+        handleExcelFile(files[0]);
+      }
+    });
+
+    // ================= 初始化 =================
+    const searchInput = document.getElementById('searchInput');
+    if (searchInput) searchInput.addEventListener('input', e => applyFilter(e.target.value));
+    renderAll();
+  </script>
+</body>
+</html>

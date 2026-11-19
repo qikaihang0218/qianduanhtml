@@ -1,0 +1,501 @@
+<!doctype html>
+<html lang="zh-CN">
+<head>
+<meta charset="utf-8"><meta name="viewport" content="width=device-width,initial-scale=1">
+<meta name="theme-color" content="#060916"><meta name="color-scheme" content="dark"><meta name="description" content="可交互的多风格粒子特效工作台，支持实时调参、文字与图片粒子化、场景导入导出。"><title>Neon Particle Studio Pro · 多风格粒子实验室</title>
+<style>
+@import url('https://fonts.googleapis.com/css2?family=DM+Mono:wght@400;500&family=Manrope:wght@400;500;600;700;800&family=Noto+Sans+SC:wght@400;500;600;700;800&display=swap');
+:root{--bg:#060916;--panel:rgba(14,20,42,.84);--panel2:#0c1228;--border:rgba(125,151,229,.16);--borderhi:rgba(106,130,255,.35);--text:#f1f4ff;--muted:#818ba9;--cyan:#41e2ff;--violet:#a36aff;--pink:#ee6cff;--green:#65efc5;--font:'Manrope','Noto Sans SC',system-ui,sans-serif;--mono:'DM Mono',monospace}
+*{box-sizing:border-box}html{min-height:100%;background:var(--bg)}body{margin:0;color:var(--text);font-family:var(--font);background:radial-gradient(ellipse at 18% 0%,rgba(35,70,174,.18),transparent 34%),radial-gradient(ellipse at 88% 35%,rgba(103,37,170,.13),transparent 33%),var(--bg);min-height:100vh}.app-shell{max-width:1600px;margin:auto;padding:0 34px 28px}.topbar{height:76px;border-bottom:1px solid var(--border);display:flex;align-items:center;justify-content:space-between}.brand{display:flex;gap:12px;align-items:center;text-decoration:none;color:var(--text)}.brand-mark{display:grid;place-items:center;width:39px;height:39px;border-radius:13px;font-size:25px;color:#92eaff;background:linear-gradient(135deg,rgba(53,171,255,.23),rgba(163,106,255,.24));border:1px solid #4562b9;box-shadow:0 0 28px #3d47aa30}.brand b{display:block;font-size:12px;letter-spacing:2.4px}.brand small{display:block;margin-top:3px;color:var(--muted);font-size:11px;letter-spacing:.7px}.top-meta{display:flex;align-items:center;gap:10px;color:#9da7c4;font:11px var(--mono)}.live-dot,.mini-dot{width:7px;height:7px;border-radius:50%;background:#52eab7;box-shadow:0 0 12px #52eab7;display:inline-block}.meta-divider{height:16px;width:1px;background:var(--border);margin:0 5px}.intro{text-align:center;padding:39px 0 31px}.eyebrow,.stage-kicker{font:10px var(--mono);letter-spacing:2.2px;color:#73a7ff}.intro h1{font-size:clamp(29px,3.5vw,46px);margin:10px 0 9px;font-weight:800;letter-spacing:-1.5px}.intro h1 span{background:linear-gradient(90deg,#70e8ff,#a38aff 55%,#f07de9);color:transparent;background-clip:text}.intro p{margin:0;color:#919bb9;font-size:13px}.workspace{display:grid;grid-template-columns:minmax(0,1.62fr) minmax(360px,1fr);gap:18px;align-items:start}.stage-card,.control-card{background:linear-gradient(145deg,rgba(14,21,46,.93),rgba(8,13,30,.96));border:1px solid var(--border);border-radius:18px;box-shadow:0 14px 60px #0003;overflow:hidden}.stage-head{display:flex;align-items:center;justify-content:space-between;padding:20px 21px 17px}.stage-head h2,.panel-head h2{margin:5px 0 0;font-size:17px;letter-spacing:.2px}.stage-actions{display:flex;gap:8px}.icon-btn{width:34px;height:34px;border-radius:10px;color:#c6d0ee;background:#151e3b;border:1px solid #29375f;font-size:17px;cursor:pointer}.icon-btn:hover{border-color:#7385f7;color:#fff}.canvas-wrap{height:clamp(340px,43vw,620px);min-height:340px;position:relative;background:radial-gradient(ellipse at 50% 50%,#101b46 0%,#070b1c 63%,#050815 100%);overflow:hidden;border-top:1px solid #29345d;border-bottom:1px solid var(--border)}#particleCanvas{width:100%;height:100%;display:block;touch-action:pan-y}.canvas-overlay{position:absolute;pointer-events:none;bottom:14px;left:15px;right:15px;display:flex;justify-content:space-between;align-items:center;color:#7c89b4;font:9px var(--mono);letter-spacing:.7px}.canvas-overlay span:first-child{color:#9fafff;background:#111c40b8;border:1px solid #35457b;border-radius:6px;padding:6px 8px}.stage-footer{padding:12px 18px;display:flex;align-items:center;gap:20px;color:#818ba9;font:10px var(--mono)}.stage-footer>span:first-child{display:flex;align-items:center;gap:7px;color:#bbc4e0}.stage-footer .hint{margin-left:auto;color:#69759a}.center-message{position:absolute;inset:0;display:grid;place-items:center;pointer-events:none;color:#fff;font-size:clamp(24px,5vw,64px);font-weight:800;letter-spacing:3px;text-shadow:0 0 22px #659aff,0 0 60px #a05aff;opacity:.0}.control-card{max-height:none}.panel-head{display:flex;justify-content:space-between;align-items:center;padding:20px 20px 15px}.panel-head h2{font-size:18px}.text-btn{background:transparent;border:0;color:#8e9ac2;font-family:var(--font);font-size:11px;cursor:pointer}.text-btn:hover{color:white}.control-section{padding:15px 20px 19px;border-top:1px solid var(--border)}.section-title{display:flex;align-items:center;gap:9px;margin-bottom:14px}.section-title>span{font:10px var(--mono);color:#6e8dff;border:1px solid #344c9d;border-radius:6px;padding:4px 5px}.section-title b{font-size:12px;font-weight:700}.section-title small{margin-left:auto;color:#67739a;font:9px var(--mono);letter-spacing:.7px}.style-grid{display:grid;grid-template-columns:repeat(3,minmax(0,1fr));gap:7px}.style-choice{position:relative;min-height:78px;text-align:left;padding:10px 8px 9px;background:linear-gradient(135deg,#101934,#0b1127);border:1px solid #222e52;border-radius:10px;color:#dce4ff;cursor:pointer;transition:.16s ease;overflow:hidden}.style-choice:before{content:'';position:absolute;inset:0;opacity:0;background:radial-gradient(circle at 20% 0%,#6568ff30,transparent 80%);transition:opacity .2s}.style-choice:hover{border-color:#6171c7;transform:translateY(-1px)}.style-choice.active{border-color:#7181ff;box-shadow:inset 0 0 0 1px #687aff50,0 0 17px #5c69ff1c;background:linear-gradient(135deg,#1a2450,#101630)}.style-choice.active:before{opacity:1}.style-icon{position:relative;display:block;font-size:18px;height:25px;line-height:21px;color:#75dfff;text-shadow:0 0 11px currentColor}.style-choice b,.style-choice small{position:relative;display:block}.style-choice b{font-size:11px;font-weight:600;white-space:nowrap}.style-choice small{margin-top:3px;color:#7e8aaa;font-size:9px}.wave-icon,.fluid-icon{color:#bd82ff}.vortex-icon,.fire-icon{color:#ff9b5e}.galaxy-icon,.aurora-icon{color:#6d9dff}.rain-icon,.matrix-icon{color:#64edcf}.ink-icon{color:#bac7da}.geo-icon{color:#e17cff}.orbit-icon{color:#ffd36f}.range-row{display:flex;align-items:center;justify-content:space-between;margin:13px 1px 7px;font-size:11px;color:#bdc6e0}.range-row output{font:11px var(--mono);color:#89dfff}input[type=range]{appearance:none;width:100%;height:4px;border-radius:6px;background:linear-gradient(90deg,#4c8cff,#b260ff);outline:none;display:block;margin:0 0 14px;cursor:pointer}input[type=range]::-webkit-slider-thumb{appearance:none;width:13px;height:13px;border-radius:50%;border:2px solid #d9f7ff;background:#5b8eff;box-shadow:0 0 10px #5b8eff88}input[type=range]::-moz-range-thumb{width:11px;height:11px;border-radius:50%;border:2px solid #d9f7ff;background:#5b8eff;box-shadow:0 0 10px #5b8eff88}.color-row{display:grid;grid-template-columns:1fr 1.15fr;align-items:center;margin-top:12px;font-size:11px;color:#bdc6e0}.color-row select{width:100%;background:#0a1024;color:#cbd6f5;border:1px solid #293658;border-radius:8px;padding:9px 10px;font:10px var(--font);outline:none}.color-row select:focus{border-color:#7588ff}.field-label{font-size:10px;color:#8592b5;display:block;margin-bottom:6px}.text-entry{display:flex;gap:7px}.text-entry input{flex:1;min-width:0;background:#090f22;border:1px solid #293658;border-radius:8px;color:#ecf1ff;padding:10px 11px;font:11px var(--mono);outline:none}.text-entry input:focus{border-color:#6e7cff}.primary-btn,.secondary-btn{font-family:var(--font);cursor:pointer;border-radius:8px;font-size:10px;transition:.18s}.primary-btn{padding:0 15px;border:1px solid #8b72ff;background:linear-gradient(105deg,#466cf7,#ad5df7);color:white;box-shadow:0 5px 18px #8158ff33}.primary-btn:hover{filter:brightness(1.13)}.upload-area{display:flex;align-items:center;gap:10px;margin-top:10px;padding:12px;background:#0a1024;border:1px dashed #394977;border-radius:9px;cursor:pointer}.upload-area:hover{border-color:#7e8cff;background:#101735}.upload-icon{width:30px;height:30px;border-radius:8px;background:#242451;color:#b9a5ff;display:grid;place-items:center;font-size:17px}.upload-area b,.upload-area small{display:block}.upload-area b{font-size:10px;color:#e3e9ff}.upload-area small{font-size:9px;color:#7f8aac;margin-top:4px}.upload-arrow{margin-left:auto;color:#7b8cff;font-size:20px}.mini-actions{display:grid;grid-template-columns:repeat(3,1fr);gap:7px;margin-top:9px}.secondary-btn{padding:9px 3px;background:#111a34;border:1px solid #2a395f;color:#bac6e9}.secondary-btn:hover{border-color:#6073c8;background:#19254a;color:white}.last-section{padding-bottom:17px}.export-grid{display:grid;grid-template-columns:1fr 1fr;gap:8px}.export-btn{display:grid;grid-template-columns:35px 1fr;column-gap:8px;align-items:center;text-align:left;padding:11px 9px;border:1px solid #29385f;border-radius:9px;background:#0d152d;color:#dbe4ff;cursor:pointer}.export-btn:hover{border-color:#7184fa;background:#151f41}.export-btn>span{grid-row:span 2;display:grid;place-items:center;width:34px;height:34px;background:#202b57;border-radius:8px;color:#99a5ff;font:15px var(--mono)}.export-btn b{font-size:10px}.export-btn small{font-size:9px;color:#7e8daf;margin-top:3px}.privacy-note{font-size:9px;color:#697797;line-height:1.6;margin:11px 0 0}.feature-strip{display:grid;grid-template-columns:repeat(4,1fr);margin-top:18px;padding:17px 20px;background:#0b1128ba;border:1px solid var(--border);border-radius:14px;gap:12px}.feature-strip>div{display:flex;align-items:center;gap:10px;border-right:1px solid var(--border);padding-right:8px}.feature-strip>div:last-child{border:0}.feature-mark{width:34px;height:34px;display:grid;place-items:center;flex-shrink:0;border:1px solid #334b93;background:#121c3a;border-radius:10px;color:#81dfff;font-size:17px}.feature-strip b,.feature-strip small{display:block}.feature-strip b{font-size:10px}.feature-strip small{font-size:9px;color:#7c88aa;margin-top:4px}footer{text-align:center;padding:22px 0 0;font:9px var(--mono);letter-spacing:1.4px;color:#586487}footer span{color:#6b7dfa;margin:0 7px}.toast{position:fixed;left:50%;bottom:24px;z-index:20;transform:translate(-50%,20px);opacity:0;pointer-events:none;padding:11px 16px;border:1px solid #465cb3;border-radius:10px;background:#111a37;color:#e7edff;font-size:11px;box-shadow:0 10px 40px #0006;transition:.25s}.toast.show{opacity:1;transform:translate(-50%,0)}.canvas-wrap.fullscreen-stage{position:fixed;inset:0;width:100vw;height:100vh;z-index:50;border:0;border-radius:0}.canvas-wrap.fullscreen-stage #particleCanvas{height:100vh}.canvas-wrap.fullscreen-stage .canvas-overlay{bottom:24px}.canvas-wrap.fullscreen-stage~*{position:relative}.is-paused #particleCanvas{filter:saturate(.85)}
+@media(min-width:1250px){.control-card{max-height:calc(100vh - 122px);overflow:auto;scrollbar-width:thin;scrollbar-color:#303e70 transparent}.control-card::-webkit-scrollbar{width:5px}.control-card::-webkit-scrollbar-thumb{background:#303e70;border-radius:8px}}
+@media(max-width:1000px){.app-shell{padding:0 18px 24px}.workspace{grid-template-columns:minmax(0,1.25fr) minmax(340px,1fr)}.style-grid{grid-template-columns:repeat(2,minmax(0,1fr))}.canvas-wrap{height:460px}.feature-strip{grid-template-columns:repeat(2,1fr)}.feature-strip>div:nth-child(2){border:0}}
+@media(max-width:720px){.app-shell{padding:0 12px 20px}.topbar{height:65px}.top-meta{font-size:9px}.intro{padding:30px 0 23px}.intro h1{letter-spacing:-.8px}.intro p{font-size:11px;line-height:1.8;max-width:330px;margin:auto}.workspace{grid-template-columns:1fr}.canvas-wrap{height:min(78vw,440px);min-height:300px}.control-card{max-height:none}.style-grid{grid-template-columns:repeat(3,minmax(0,1fr))}.style-choice{min-height:74px}.control-section{padding:15px}.stage-head,.panel-head{padding:16px}.feature-strip{padding:14px;gap:13px}.feature-strip b{font-size:9px}.feature-strip small{font-size:8px}.feature-mark{width:30px;height:30px}.stage-footer{gap:10px;padding:10px 12px;font-size:9px}.stage-footer .hint{display:none}}
+@media(max-width:390px){.style-grid{grid-template-columns:repeat(2,minmax(0,1fr))}.brand b{font-size:10px;letter-spacing:1.7px}.top-meta{gap:6px}.mini-actions{grid-template-columns:1fr}.color-row{grid-template-columns:.8fr 1.2fr}}
+
+/* Curated scene presets */
+.preset-grid{display:grid;grid-template-columns:repeat(3,minmax(0,1fr));gap:8px;margin-top:12px}
+.preset-btn{min-width:0;text-align:left;border:1px solid var(--line,rgba(115,139,255,.16));background:rgba(12,18,42,.62);border-radius:10px;padding:9px 8px;cursor:pointer;color:inherit;transition:transform .18s,border-color .18s,background .18s}
+.preset-btn:hover,.preset-btn:focus-visible{transform:translateY(-2px);border-color:rgba(76,205,255,.7);background:rgba(30,43,82,.72);outline:none}
+.preset-btn b,.preset-btn small{display:block;overflow:hidden;text-overflow:ellipsis;white-space:nowrap}.preset-btn b{font-size:11px;margin-top:7px}.preset-btn small{font-size:9px;color:var(--muted,#8996b7);margin-top:3px}
+.preset-swatch{display:block;height:27px;border-radius:6px;border:1px solid rgba(255,255,255,.08)}
+.cyber-swatch{background:radial-gradient(circle at 25% 50%,#55f0ff,transparent 24%),linear-gradient(120deg,#061b49,#143dff,#04091d)}
+.cosmos-swatch{background:radial-gradient(circle at 50% 50%,#fff4b0,#ffad43 7%,transparent 38%),linear-gradient(120deg,#02040d,#13113b,#02040d)}
+.ember-swatch{background:radial-gradient(ellipse at 35% 90%,#ffed61,transparent 20%),linear-gradient(135deg,#19050a,#ff3b13,#42120b)}
+.dream-swatch{background:linear-gradient(120deg,#092c8a,#10d6f0,#922dff,#ff54c9)}
+.ink-swatch{background:radial-gradient(ellipse at 60% 50%,#cbd7e2,transparent 35%),linear-gradient(90deg,#020305,#333a42,#050609)}
+.matrix-swatch{background:repeating-linear-gradient(90deg,transparent 0 8px,rgba(50,255,130,.42) 9px 10px),linear-gradient(#03130c,#020605)}
+.preset-actions{margin-top:10px}.preset-actions .secondary-btn{flex:1}
+@media(max-width:480px){.preset-grid{grid-template-columns:repeat(2,minmax(0,1fr))}}
+
+.preset-btn.active{border-color:#7181ff;box-shadow:inset 0 0 0 1px #687aff50,0 0 17px #5c69ff1c;background:linear-gradient(135deg,#1a2450,#101630)}
+
+</style>
+</head>
+<body>
+<div class="app-shell">
+  <header class="topbar">
+    <a class="brand" href="#" aria-label="Neon Particle Studio 首页"><span class="brand-mark">✳</span><span><b>NEON / PARTICLE</b><small>多风格粒子实验室</small></span></a>
+    <div class="top-meta"><span class="live-dot"></span><span>实时渲染</span><span class="meta-divider"></span><span id="fpsLabel">-- FPS</span></div>
+  </header>
+  <main>
+    <section class="intro">
+      <div class="eyebrow">INTERACTIVE CANVAS PLAYGROUND</div>
+      <h1>让粒子，<span>拥有自己的宇宙。</span></h1>
+      <p>12 种动态视觉风格 · 文字与 Logo 聚合 · 实时参数控制 · 可导出配置与嵌入代码</p>
+    </section>
+    <section class="workspace">
+      <div class="stage-card">
+        <div class="stage-head"><div><span class="stage-kicker">LIVE PREVIEW</span><h2 id="styleTitle">科技网络</h2></div><div class="stage-actions"><button id="pauseBtn" class="icon-btn" title="暂停/继续">Ⅱ</button><button id="fullscreenBtn" class="icon-btn" title="全屏">⛶</button></div></div>
+        <div class="canvas-wrap" id="canvasWrap"><canvas id="particleCanvas" aria-label="动态粒子预览"></canvas><div class="canvas-overlay"><span id="modeTag">NETWORK / 01</span><span>移动鼠标或触摸屏幕互动</span></div><div id="centerMessage" class="center-message" hidden></div></div>
+        <div class="stage-footer"><span><i class="mini-dot"></i><span id="particleCountLabel">粒子 650</span></span><span id="canvasSizeLabel">画布自适应</span><span class="hint">点击画布：粒子爆发</span></div>
+      </div>
+      <aside class="control-card">
+        <div class="panel-head"><div><span class="stage-kicker">CONTROL DECK</span><h2>参数控制台</h2></div><button id="resetBtn" class="text-btn">重置 ↺</button></div>
+        <section class="control-section">
+          <div class="section-title"><span>01</span><b>选择粒子风格</b><small>12 STYLES</small></div>
+          <div class="style-grid" id="styleGrid">
+            <button class="style-choice active" data-style="network"><span class="style-icon net-icon">⌘</span><b>科技网络</b><small>连线 / 交互</small></button>
+            <button class="style-choice" data-style="wave"><span class="style-icon wave-icon">≋</span><b>霓虹光带</b><small>波浪 / 流动</small></button>
+            <button class="style-choice" data-style="vortex"><span class="style-icon vortex-icon">✺</span><b>粒子漩涡</b><small>旋转 / 汇聚</small></button>
+            <button class="style-choice" data-style="galaxy"><span class="style-icon galaxy-icon">✧</span><b>星河宇宙</b><small>深空 / 星尘</small></button>
+            <button class="style-choice" data-style="fire"><span class="style-icon fire-icon">♨</span><b>炽热火焰</b><small>上升 / 能量</small></button>
+            <button class="style-choice" data-style="rain"><span class="style-icon rain-icon">╎</span><b>赛博雨幕</b><small>下落 / 矩阵</small></button>
+            <button class="style-choice" data-style="ink"><span class="style-icon ink-icon">〰</span><b>水墨流体</b><small>烟雾 / 东方</small></button>
+            <button class="style-choice" data-style="geometric"><span class="style-icon geo-icon">◇</span><b>几何晶体</b><small>网格 / 多边形</small></button>
+            <button class="style-choice" data-style="fluid"><span class="style-icon fluid-icon">∿</span><b>流体粒子</b><small>柔波 / 运动</small></button>
+            <button class="style-choice" data-style="aurora"><span class="style-icon aurora-icon">⌁</span><b>极光薄雾</b><small>辉光 / 渐变</small></button>
+            <button class="style-choice" data-style="orbit"><span class="style-icon orbit-icon">◎</span><b>行星轨道</b><small>公转 / 环绕</small></button>
+            <button class="style-choice" data-style="matrix"><span class="style-icon matrix-icon">01</span><b>数字矩阵</b><small>字符 / 雨流</small></button>
+          </div>
+        </section>
+        <section class="control-section">
+          <div class="section-title"><span>02</span><b>快速场景预设</b><small>ONE-CLICK LOOKS</small></div>
+          <div class="preset-grid">
+            <button class="preset-btn" data-preset="cyber"><span class="preset-swatch cyber-swatch"></span><b>赛博蓝</b><small>科技网络 · 青蓝</small></button>
+            <button class="preset-btn" data-preset="cosmos"><span class="preset-swatch cosmos-swatch"></span><b>深空星云</b><small>星河 · 金色星尘</small></button>
+            <button class="preset-btn" data-preset="ember"><span class="preset-swatch ember-swatch"></span><b>熔岩余烬</b><small>火焰 · 日落色</small></button>
+            <button class="preset-btn" data-preset="dream"><span class="preset-swatch dream-swatch"></span><b>梦幻极光</b><small>极光 · 彩虹色</small></button>
+            <button class="preset-btn" data-preset="ink"><span class="preset-swatch ink-swatch"></span><b>东方水墨</b><small>水墨 · 黑白色</small></button>
+            <button class="preset-btn" data-preset="matrix"><span class="preset-swatch matrix-swatch"></span><b>矩阵终端</b><small>数字雨 · 绿色感</small></button>
+          </div>
+          <div class="mini-actions preset-actions"><button id="savePresetBtn" class="secondary-btn">保存当前场景</button><button id="sharePresetBtn" class="secondary-btn">复制分享链接</button></div>
+        </section>
+        <section class="control-section">
+          <div class="section-title"><span>03</span><b>粒子参数</b><small>LIVE TUNING</small></div>
+          <div class="range-row"><label for="countRange">粒子数量</label><output id="countOut">650</output></div><input id="countRange" type="range" min="120" max="1600" step="10" value="650">
+          <div class="range-row"><label for="speedRange">运动速度</label><output id="speedOut">1.0×</output></div><input id="speedRange" type="range" min="0.2" max="2.8" step="0.1" value="1">
+          <div class="range-row"><label for="sizeRange">粒子尺寸</label><output id="sizeOut">2.0</output></div><input id="sizeRange" type="range" min="0.6" max="4.5" step="0.1" value="2">
+          <div class="range-row"><label for="glowRange">发光强度</label><output id="glowOut">70%</output></div><input id="glowRange" type="range" min="0" max="100" step="1" value="70">
+          <div class="color-row"><label for="colorSelect">主色调</label><select id="colorSelect"><option value="neon">蓝紫霓虹</option><option value="cyan">冰川青蓝</option><option value="sunset">熔岩日落</option><option value="gold">星尘金色</option><option value="mono">黑白水墨</option><option value="rainbow">全息彩虹</option></select></div>
+          <div class="color-row"><label for="bgSelect">背景模式</label><select id="bgSelect"><option value="dark">深色渐变</option><option value="black">纯黑背景</option><option value="transparent">透明背景</option></select></div>
+          <div class="color-row"><label for="interactionSelect">鼠标力场</label><select id="interactionSelect"><option value="repel">排斥粒子</option><option value="attract">吸引粒子</option><option value="none">关闭互动</option></select></div>
+          <div class="range-row"><label for="trailRange">运动拖尾</label><output id="trailOut">96%</output></div><input id="trailRange" type="range" min="75" max="100" step="1" value="96">
+        </section>
+        <section class="control-section">
+          <div class="section-title"><span>04</span><b>文字 / Logo 聚合</b><small>PARTICLE MASK</small></div>
+          <label class="field-label" for="textInput">输入文字</label><div class="text-entry"><input id="textInput" maxlength="36" value="PARTICLE" placeholder="输入文字，例如 HELLO"><button id="gatherTextBtn" class="primary-btn">聚合</button></div>
+          <label class="upload-area" for="imageInput"><span class="upload-icon">↑</span><span><b>导入图片 / Logo</b><small>PNG · JPG · WebP · SVG · 本地采样，不上传</small></span><span class="upload-arrow">＋</span></label><input id="imageInput" type="file" accept="image/*" hidden>
+          <div class="mini-actions"><button id="scatterBtn" class="secondary-btn">散开粒子</button><button id="explodeBtn" class="secondary-btn">粒子爆发</button><button id="clearTargetBtn" class="secondary-btn">清除目标</button></div>
+        </section>
+        <section class="control-section last-section">
+          <div class="section-title"><span>05</span><b>导出与复用</b><small>EXPORT</small></div>
+          <div class="export-grid"><button id="exportConfigBtn" class="export-btn"><span>⇩</span><b>导出配置</b><small>JSON 参数</small></button><button id="importConfigBtn" class="export-btn"><span>↥</span><b>导入配置</b><small>恢复 JSON</small></button><button id="exportCodeBtn" class="export-btn"><span>‹/›</span><b>嵌入代码</b><small>HTML + JS 调用</small></button></div><input id="configFileInput" type="file" accept=".json,application/json" hidden>
+          <p class="privacy-note">所有效果均在浏览器本地 Canvas 渲染；导入的图片仅在本地用于像素采样。</p>
+        </section>
+      </aside>
+    </section>
+    <section class="feature-strip"><div><span class="feature-mark">✳</span><span><b>响应式画布</b><small>适配桌面与移动设备</small></span></div><div><span class="feature-mark">⌁</span><span><b>即时交互</b><small>鼠标与触摸力场</small></span></div><div><span class="feature-mark">T</span><span><b>文字 / 图片粒子化</b><small>自定义目标图形</small></span></div><div><span class="feature-mark">↗</span><span><b>配置可复用</b><small>JSON 与代码导出</small></span></div></section>
+    <footer>NEON / PARTICLE STUDIO <span>—</span> Canvas experiment for creative web backgrounds</footer>
+  </main>
+</div>
+<div class="toast" id="toast" role="status" aria-live="polite"></div>
+<script>
+/* Neon Particle Studio - dependency-free Canvas 2D engine */
+(function (global) {
+  'use strict';
+  const TAU = Math.PI * 2;
+  const PALETTES = {
+    neon: [188, 205, 218, 235, 255, 278, 300],
+    cyan: [174, 184, 195, 202, 210, 222],
+    sunset: [4, 12, 22, 32, 42, 348],
+    gold: [34, 39, 45, 49, 55, 62],
+    mono: [0, 0, 0, 0, 210],
+    rainbow: [0, 28, 55, 110, 160, 190, 220, 275, 310, 340]
+  };
+  const STYLE_TITLES = {
+    network: '科技网络', wave: '霓虹光带', vortex: '粒子漩涡', galaxy: '星河宇宙',
+    fire: '炽热火焰', rain: '赛博雨幕', ink: '水墨流体', geometric: '几何晶体',
+    fluid: '流体粒子', aurora: '极光薄雾', orbit: '行星轨道', matrix: '数字矩阵'
+  };
+  class ParticleEngine {
+    constructor(canvas, options = {}) {
+      if (!canvas || !canvas.getContext) throw new Error('ParticleEngine needs a canvas element');
+      this.canvas = canvas; this.ctx = canvas.getContext('2d', { alpha: true });
+      this.options = Object.assign({ count: 650, speed: 1, size: 2, glow: 70, color: 'neon', background: 'dark', style: 'network', interaction: 'repel', trail: 96 }, options);
+      this.w = 1; this.h = 1; this.dpr = 1; this.t = 0; this.running = true; this.pointer = { x: -9999, y: -9999, down: false }; this.particles = [];
+      this.targets = null; this.targetPoints = null; this.targetLabel = ''; this.previousStyle = this.options.style; this.explosions = [];
+      this._last = 0; this._raf = 0; this._resizeObserver = null;
+      this._bindPointer(); this.resize(); this.setCount(this.options.count); this._frame = this._frame.bind(this); this._raf = requestAnimationFrame(this._frame);
+      if (typeof ResizeObserver !== 'undefined') { this._resizeObserver = new ResizeObserver(() => this.resize()); this._resizeObserver.observe(canvas.parentElement || canvas); }
+      else global.addEventListener('resize', () => this.resize());
+    }
+    _bindPointer() {
+      const toPoint = e => { const r = this.canvas.getBoundingClientRect(); this.pointer.x = e.clientX - r.left; this.pointer.y = e.clientY - r.top; };
+      this.canvas.addEventListener('pointermove', e => toPoint(e));
+      this.canvas.addEventListener('pointerleave', () => { this.pointer.x = -9999; this.pointer.y = -9999; this.pointer.down = false; });
+      this.canvas.addEventListener('pointerdown', e => { toPoint(e); this.pointer.down = true; });
+      this.canvas.addEventListener('pointerup', () => { this.pointer.down = false; });
+      this.canvas.addEventListener('click', e => { if (!e.defaultPrevented) this.explode(e.clientX - this.canvas.getBoundingClientRect().left, e.clientY - this.canvas.getBoundingClientRect().top); });
+    }
+    resize() {
+      const rect = this.canvas.getBoundingClientRect(); const oldW = this.w, oldH = this.h;
+      this.w = Math.max(1, rect.width || this.canvas.clientWidth || 800); this.h = Math.max(1, rect.height || this.canvas.clientHeight || 500);
+      this.dpr = Math.min(global.devicePixelRatio || 1, 2);
+      this.canvas.width = Math.round(this.w * this.dpr); this.canvas.height = Math.round(this.h * this.dpr);
+      this.ctx.setTransform(this.dpr, 0, 0, this.dpr, 0, 0);
+      if (oldW > 1 && oldH > 1) this.particles.forEach(p => { p.x *= this.w / oldW; p.y *= this.h / oldH; p.bx *= this.w / oldW; p.by *= this.h / oldH; });
+      if (this.targetPoints) this._assignTargetCoords(this.targetPoints);
+    }
+    setCount(n) {
+      n = Math.max(80, Math.min(1800, Math.round(Number(n) || 650))); this.options.count = n;
+      while (this.particles.length < n) this.particles.push(this._newParticle());
+      if (this.particles.length > n) this.particles.length = n;
+      if (this.targetPoints) this._assignTargetCoords(this.targetPoints);
+    }
+    _newParticle() {
+      const x = Math.random() * this.w, y = Math.random() * this.h;
+      return { x, y, bx: x, by: y, vx: (Math.random() - .5) * .5, vy: (Math.random() - .5) * .5,
+        r: .4 + Math.random() * 1.6, phase: Math.random() * TAU, depth: .2 + Math.random() * .8,
+        arm: Math.floor(Math.random() * 5), hueOffset: Math.random() * 34, glyph: Math.random() > .5 ? '1' : '0', flash: 0 };
+    }
+    setStyle(style) { if (!STYLE_TITLES[style]) return; this.options.style = style; this.targets = null; this.targetPoints = null; this.targetLabel = ''; this._resetBase(); }
+    setOptions(next = {}) {
+      const prev = Object.assign({}, this.options); Object.assign(this.options, next);
+      if (next.count != null && Number(next.count) !== prev.count) this.setCount(next.count);
+      if (next.style && next.style !== prev.style) this.setStyle(next.style);
+    }
+    _resetBase() { this.particles.forEach(p => { p.bx = Math.random() * this.w; p.by = Math.random() * this.h; p.x = p.bx; p.y = p.by; p.vx = (Math.random() - .5) * .6; p.vy = (Math.random() - .5) * .6; p.phase = Math.random() * TAU; p.arm = Math.floor(Math.random() * 5); }); }
+    _assignTargetCoords(points) {
+      if (!points || !points.length) { this.targets = null; return; }
+      this.targets = this.particles.map((p, i) => {
+        const pt = points[(i * points.length / this.particles.length) | 0];
+        return { x: pt.x * this.w, y: pt.y * this.h };
+      });
+    }
+    setTarget(points, label = '目标图形') {
+      if (!points || !points.length) return false;
+      this.previousStyle = this.options.style; this.targetPoints = points; this.targetLabel = label; this.options.style = 'target'; this._assignTargetCoords(points); return true;
+    }
+    clearTarget() { if (!this.targets) return; this.targets = null; this.targetPoints = null; this.targetLabel = ''; this.options.style = this.previousStyle || 'network'; this._resetBase(); }
+    gatherText(text) {
+      text = String(text || '').trim(); if (!text) return false;
+      const w = 1000, h = 420, c = document.createElement('canvas'); c.width = w; c.height = h; const x = c.getContext('2d', { willReadFrequently: true });
+      let fontSize = Math.min(240, Math.floor(w * .82 / Math.max(1, text.length * .62)));
+      fontSize = Math.max(36, fontSize); x.font = `800 ${fontSize}px Arial, sans-serif`;
+      while (x.measureText(text).width > w * .9 && fontSize > 24) { fontSize -= 4; x.font = `800 ${fontSize}px Arial, sans-serif`; }
+      x.textAlign = 'center'; x.textBaseline = 'middle'; x.fillStyle = '#fff'; x.fillText(text, w / 2, h / 2);
+      const data = x.getImageData(0, 0, w, h).data, step = Math.max(4, Math.round(9 - this.options.count / 350)); const points = [];
+      for (let yy = 0; yy < h; yy += step) for (let xx = 0; xx < w; xx += step) { if (data[(yy * w + xx) * 4 + 3] > 80) points.push({ x: .08 + xx / w * .84, y: .18 + yy / h * .64 }); }
+      return this.setTarget(points, text);
+    }
+    gatherImage(image) {
+      const w = 900, h = 500, c = document.createElement('canvas'); c.width = w; c.height = h; const x = c.getContext('2d', { willReadFrequently: true });
+      x.clearRect(0, 0, w, h); const scale = Math.min(w / image.width, h / image.height) * .86; const dw = image.width * scale, dh = image.height * scale;
+      x.drawImage(image, (w - dw) / 2, (h - dh) / 2, dw, dh);
+      const data = x.getImageData(0, 0, w, h).data, step = Math.max(4, Math.round(9 - this.options.count / 350)), points = [];
+      // If all four corners share a sufficiently similar opaque color, treat it as a flat background.
+      // Transparent PNGs (including black logos on transparency) remain alpha-sampled without color filtering.
+      const corners = [[0, 0], [w - 1, 0], [0, h - 1], [w - 1, h - 1]].map(([cx, cy]) => {
+        const k = (cy * w + cx) * 4; return [data[k], data[k + 1], data[k + 2], data[k + 3]];
+      });
+      const opaqueCorners = corners.every(v => v[3] > 235);
+      const spread = opaqueCorners ? Math.max(...[0, 1, 2].map(ch => Math.max(...corners.map(v => v[ch])) - Math.min(...corners.map(v => v[ch])))) : 255;
+      const flatBackground = opaqueCorners && spread < 22 ? [0, 1, 2].map(ch => Math.round(corners.reduce((sum, v) => sum + v[ch], 0) / corners.length)) : null;
+      for (let yy = 0; yy < h; yy += step) for (let xx = 0; xx < w; xx += step) {
+        const k = (yy * w + xx) * 4, alpha = data[k + 3];
+        if (alpha <= 45) continue;
+        if (flatBackground) {
+          const distance = Math.hypot(data[k] - flatBackground[0], data[k + 1] - flatBackground[1], data[k + 2] - flatBackground[2]);
+          if (distance < 42) continue;
+        }
+        points.push({ x: xx / w, y: yy / h });
+      }
+      if (!points.length) return false;
+      return this.setTarget(points, 'Logo / 图片');
+    }
+    scatter() {
+      this.targets = null; this.targetPoints = null; this.targetLabel = ''; this.options.style = this.previousStyle || 'network';
+      this.particles.forEach(p => { p.x = this.w / 2 + (Math.random() - .5) * this.w * .24; p.y = this.h / 2 + (Math.random() - .5) * this.h * .24; p.vx = (Math.random() - .5) * 7; p.vy = (Math.random() - .5) * 7; p.bx = Math.random() * this.w; p.by = Math.random() * this.h; });
+    }
+    explode(x = this.w / 2, y = this.h / 2) {
+      this.explosions.push({ x, y, life: 1 });
+      this.particles.forEach(p => { const dx = p.x - x, dy = p.y - y, d = Math.max(8, Math.hypot(dx, dy)), force = (2 + Math.random() * 5) * Math.min(1.8, 230 / d); p.vx += dx / d * force; p.vy += dy / d * force; p.flash = 1; });
+    }
+    pause(value) { this.running = typeof value === 'boolean' ? !value : !this.running; return this.running; }
+    _palette(p) {
+      const palette = PALETTES[this.options.color] || PALETTES.neon; let hue = palette[(Math.floor((p.phase + this.t * .22) * 2) + p.arm) % palette.length];
+      if (this.options.style === 'fire') hue = [4, 12, 24, 32, 42][Math.floor((p.phase * 3 + this.t) % 5)];
+      if (this.options.style === 'ink' || this.options.color === 'mono') hue = 205;
+      return `hsl(${hue + p.hueOffset * .3}, ${this.options.color === 'mono' ? '10%' : '100%'}, ${this.options.color === 'mono' ? 82 : 62 + p.depth * 24}%)`;
+    }
+    _frame(now) {
+      this._raf = requestAnimationFrame(this._frame);
+      if (!this.running) return;
+      const dt = Math.min(.04, Math.max(.001, (now - (this._last || now)) / 1000)); this._last = now; this.t += dt * this.options.speed;
+      const c = this.ctx, w = this.w, h = this.h, style = this.options.style, glow = this.options.glow / 100, baseSize = this.options.size;
+      if (this.options.background === 'transparent') {
+        if (this.options.trail >= 100) c.clearRect(0, 0, w, h);
+        else { c.globalCompositeOperation = 'destination-out'; c.fillStyle = `rgba(0,0,0,${Math.max(.04, (100 - this.options.trail) / 100)})`; c.fillRect(0, 0, w, h); c.globalCompositeOperation = 'source-over'; }
+      } else {
+        c.globalCompositeOperation = 'source-over';
+        const alpha = Math.max(.04, (100 - Math.min(99.5, this.options.trail)) / 100);
+        c.fillStyle = this.options.background === 'black' ? `rgba(0,0,0,${alpha})` : `rgba(5,8,22,${alpha})`;
+        c.fillRect(0, 0, w, h);
+      }
+      const pos = new Array(this.particles.length); c.globalCompositeOperation = 'lighter';
+      for (let i = 0; i < this.particles.length; i++) {
+        const p = this.particles[i]; let x = p.bx, y = p.by, speed = this.options.speed, t = this.t, nx = p.bx / w, ny = p.by / h;
+        if (style === 'target' && this.targets) {
+          const target = this.targets[i] || { x: p.bx, y: p.by }; const tx = target.x, ty = target.y;
+          p.x += (tx - p.x) * .105; p.y += (ty - p.y) * .105; x = p.x; y = p.y;
+        } else if (style === 'network' || style === 'geometric') {
+          x = p.bx + Math.sin(t * .6 + p.phase) * 16 * p.depth; y = p.by + Math.cos(t * .52 + p.phase * 1.5) * 14 * p.depth;
+        } else if (style === 'wave') {
+          x = p.bx; y = h * (.5 + (ny - .5) * .12) + Math.sin(nx * 8.5 + t * 1.3 + p.phase * .22) * h * .19 * p.depth + Math.sin(nx * 17 - t * .7 + p.phase) * h * .04;
+        } else if (style === 'vortex') {
+          const angle = p.phase + t * (.45 + p.depth * .4) + (p.arm / 5) * TAU, r = (0.07 + (p.depth * .5 + .08) * Math.abs(Math.sin(p.phase * 1.7 + i * .001))) * Math.min(w, h);
+          x = w / 2 + Math.cos(angle) * r; y = h / 2 + Math.sin(angle) * r * .63;
+        } else if (style === 'galaxy') {
+          const angle = p.phase + t * .16 + (p.arm / 5) * TAU + p.depth * 2.1, r = (.05 + p.depth * .47) * Math.min(w, h);
+          x = w / 2 + Math.cos(angle) * r; y = h / 2 + Math.sin(angle) * r * .67;
+        } else if (style === 'fire') {
+          y = h - ((p.by + t * (45 + 95 * p.depth)) % h); x = p.bx + Math.sin(t * 2.2 + p.phase) * (13 + (1 - ny) * 30) - (y / h) * (p.bx - w / 2) * .18;
+        } else if (style === 'rain' || style === 'matrix') {
+          y = (p.by + t * (85 + p.depth * 180)) % (h + 30) - 15; x = Math.round(p.bx / 16) * 16 + Math.sin(p.phase) * 2;
+        } else if (style === 'ink') {
+          x = p.bx + Math.sin(t * .44 + p.phase + ny * 2) * w * .10 + Math.cos(t * .21 + ny * 6) * w * .04;
+          y = p.by + Math.sin(t * .4 + nx * 4 + p.phase) * h * .14;
+        } else if (style === 'fluid') {
+          x = p.bx + Math.sin(t * .72 + ny * 9 + p.phase) * 35 + Math.cos(t * .32 + ny * 17) * 18;
+          y = p.by + Math.cos(t * .64 + nx * 8 + p.phase) * 28 + Math.sin(t * .36 + nx * 13) * 14;
+        } else if (style === 'aurora') {
+          x = p.bx; y = h * (.52 + (ny - .5) * .2) + Math.sin(nx * 4 + t * .4 + p.phase) * h * .16 + Math.sin(nx * 7 - t * .24 + p.phase) * h * .09;
+        } else if (style === 'orbit') {
+          const ring = p.arm % 4, angle = p.phase + t * (.23 + ring * .06), rx = Math.min(w, h) * (.12 + ring * .095), ry = rx * (.48 + ring * .1);
+          x = w / 2 + Math.cos(angle) * rx; y = h / 2 + Math.sin(angle) * ry;
+        }
+        if (style !== 'target' && style !== 'fire' && style !== 'rain' && style !== 'matrix') {
+          const dx = x - this.pointer.x, dy = y - this.pointer.y, d2 = dx * dx + dy * dy;
+          if (this.options.interaction !== 'none' && d2 < 150 * 150) { const d = Math.max(1, Math.sqrt(d2)), magnitude = (1 - d / 150) * (this.pointer.down ? 52 : 19), direction = this.options.interaction === 'attract' ? -1 : 1; x += dx / d * magnitude * direction; y += dy / d * magnitude * direction; }
+        }
+        if (style !== 'target') { p.x = x; p.y = y; }
+        // ease explosion velocity back toward each style's natural coordinates
+        if (style !== 'target' && (Math.abs(p.vx) > .05 || Math.abs(p.vy) > .05)) { p.vx *= .91; p.vy *= .91; x += p.vx * 3; y += p.vy * 3; p.x = x; p.y = y; }
+        pos[i] = { x, y, p };
+      }
+      if (style === 'network' || style === 'geometric') {
+        const threshold = style === 'geometric' ? 94 : 118; c.lineWidth = style === 'geometric' ? .8 : .65;
+        for (let i = 0; i < pos.length; i++) for (let j = i + 1; j < Math.min(pos.length, i + 15); j++) {
+          const dx = pos[i].x - pos[j].x, dy = pos[i].y - pos[j].y, d = Math.hypot(dx, dy);
+          if (d < threshold) { c.strokeStyle = `rgba(${style === 'geometric' ? '133,78,255' : '42,139,255'},${(1 - d / threshold) * (style === 'geometric' ? .38 : .42)})`; c.beginPath(); c.moveTo(pos[i].x, pos[i].y); c.lineTo(pos[j].x, pos[j].y); c.stroke(); }
+        }
+      }
+      if (style === 'vortex' || style === 'orbit') {
+        c.lineWidth = .7; for (let ring = 0; ring < (style === 'orbit' ? 4 : 3); ring++) { c.beginPath(); c.ellipse(w / 2, h / 2, Math.min(w, h) * (.12 + ring * .095), Math.min(w, h) * (.07 + ring * .055), this.t * .08, 0, TAU); c.strokeStyle = `rgba(112,128,255,${.08 + glow * .13})`; c.stroke(); }
+      }
+      for (let i = 0; i < pos.length; i++) {
+        const { x, y, p } = pos[i]; if (!Number.isFinite(x) || !Number.isFinite(y)) continue;
+        const alpha = (style === 'target' ? .75 : .35 + p.depth * .65) * (.45 + glow * .55), r = baseSize * (.45 + p.depth * .9) * (style === 'fire' ? 1.2 : 1);
+        const color = this._palette(p); c.globalAlpha = Math.max(.1, Math.min(1, alpha)); c.fillStyle = color;
+        if (glow > .05 && style !== 'matrix') { c.shadowBlur = 4 + glow * 15; c.shadowColor = color; } else c.shadowBlur = 0;
+        if (style === 'rain') { c.fillRect(x, y, Math.max(1, r * .5), 8 + p.depth * 27); }
+        else if (style === 'matrix') { c.font = `${9 + p.depth * 5}px monospace`; c.fillText(p.glyph, x, y); if (Math.random() < .006) p.glyph = p.glyph === '1' ? '0' : '1'; }
+        else if (style === 'fire') { c.beginPath(); c.arc(x, y, r * (1.1 + p.depth), 0, TAU); c.fill(); }
+        else if (style === 'target') { c.beginPath(); c.arc(x, y, r * .8, 0, TAU); c.fill(); }
+        else { c.beginPath(); c.arc(x, y, Math.max(.6, r), 0, TAU); c.fill(); }
+        c.shadowBlur = 0;
+      }
+      if (style === 'aurora' || style === 'wave' || style === 'ink' || style === 'fluid') this._drawSoftRibbons(style, glow);
+      for (const e of this.explosions) { c.globalAlpha = e.life * .45; c.strokeStyle = '#b6c6ff'; c.lineWidth = 1.1; c.beginPath(); c.arc(e.x, e.y, (1 - e.life) * 130, 0, TAU); c.stroke(); e.life -= dt * 1.45; }
+      this.explosions = this.explosions.filter(e => e.life > 0); c.globalAlpha = 1; c.globalCompositeOperation = 'source-over';
+    }
+    _drawSoftRibbons(style, glow) {
+      const c = this.ctx, w = this.w, h = this.h, t = this.t;
+      const count = style === 'aurora' ? 5 : style === 'ink' ? 4 : 3;
+      for (let k = 0; k < count; k++) {
+        c.beginPath();
+        for (let i = 0; i <= 90; i++) { const nx = i / 90, x = nx * w; let y;
+          if (style === 'aurora') y = h * (.45 + k * .035) + Math.sin(nx * 5 + t * .26 + k * 1.7) * h * .13 + Math.sin(nx * 9 - t * .2 + k) * h * .045;
+          else if (style === 'wave') y = h * (.5 + Math.sin(nx * 7 + t + k * .7) * .18 + Math.sin(nx * 16 - t * .5) * .04);
+          else if (style === 'ink') y = h * (.51 + Math.sin(nx * 4 + t * .22 + k) * .16 + Math.cos(nx * 11 - t * .3) * .04);
+          else y = h * (.5 + Math.sin(nx * 5 + t * .55 + k * 1.9) * .13 + Math.sin(nx * 14 - t * .33 + k) * .055);
+          if (i === 0) c.moveTo(x, y); else c.lineTo(x, y);
+        }
+        const color = style === 'ink' ? `rgba(225,236,255,${.07 + glow * .11})` : style === 'aurora' ? `rgba(${k % 2 ? '85,90,255' : '34,224,255'},${.06 + glow * .1})` : `rgba(${k % 2 ? '181,84,255' : '46,190,255'},${.08 + glow * .12})`;
+        c.strokeStyle = color; c.lineWidth = style === 'ink' ? 12 + k * 5 : 5 + k * 3; c.shadowColor = color; c.shadowBlur = 13 * glow; c.stroke(); c.shadowBlur = 0;
+      }
+    }
+    destroy() { cancelAnimationFrame(this._raf); if (this._resizeObserver) this._resizeObserver.disconnect(); }
+    getConfig() { return Object.assign({}, this.options, { styleTitle: STYLE_TITLES[this.options.style] || this.targetLabel || '目标图形', particleCount: this.particles.length }); }
+  }
+  ParticleEngine.styles = STYLE_TITLES;
+  global.ParticleEngine = ParticleEngine;
+})(window);
+
+</script><script>
+(function () {
+  'use strict';
+  const $ = id => document.getElementById(id);
+  const canvas = $('particleCanvas');
+  const params = new URLSearchParams(location.search);
+  const requestedStyle = params.get('style');
+  const initialStyle = Object.prototype.hasOwnProperty.call(ParticleEngine.styles, requestedStyle) ? requestedStyle : 'network';
+  const engine = new ParticleEngine(canvas, { count: 650, speed: 1, size: 2, glow: 70, color: 'neon', background: 'dark', style: initialStyle });
+  let toastTimer = 0, frameCount = 0, fpsTime = performance.now();
+  const showToast = message => { const el = $('toast'); el.textContent = message; el.classList.add('show'); clearTimeout(toastTimer); toastTimer = setTimeout(() => el.classList.remove('show'), 2400); };
+  function updateStyleUI(style) {
+    document.querySelectorAll('.style-choice').forEach(b => b.classList.toggle('active', b.dataset.style === style));
+    $('styleTitle').textContent = ParticleEngine.styles[style] || '文字 / Logo 聚合';
+    $('modeTag').textContent = `${String(style).toUpperCase()} / ${String(Object.keys(ParticleEngine.styles).indexOf(style) + 1).padStart(2, '0')}`;
+  }
+  function syncCount(n) { $('countOut').value = n; $('particleCountLabel').textContent = `粒子 ${n}`; }
+  document.querySelectorAll('.style-choice').forEach(button => button.addEventListener('click', () => { engine.setStyle(button.dataset.style); updateStyleUI(button.dataset.style); showToast(`已切换：${ParticleEngine.styles[button.dataset.style]}`); }));
+  const scenePresets = {
+    cyber:  { style:'network', count:850, speed:1.15, size:1.8, glow:82, color:'cyan', background:'dark', title:'赛博蓝' },
+    cosmos: { style:'galaxy', count:1000, speed:0.72, size:1.6, glow:90, color:'gold', background:'black', title:'深空星云' },
+    ember:  { style:'fire', count:760, speed:1.45, size:2.3, glow:88, color:'sunset', background:'black', title:'熔岩余烬' },
+    dream:  { style:'aurora', count:900, speed:0.8, size:2.1, glow:95, color:'rainbow', background:'dark', title:'梦幻极光' },
+    ink:    { style:'ink', count:560, speed:0.65, size:2.4, glow:35, color:'mono', background:'black', title:'东方水墨' },
+    matrix: { style:'matrix', count:950, speed:1.35, size:1.5, glow:55, color:'cyan', background:'black', title:'矩阵终端' }
+  };
+  function applyScene(scene, notify = true) {
+    engine.clearTarget();
+    engine.setOptions({ count:scene.count, speed:scene.speed, size:scene.size, glow:scene.glow, color:scene.color, background:scene.background, style:scene.style, interaction:scene.interaction || 'repel', trail:scene.trail == null ? 96 : scene.trail });
+    $('countRange').value = scene.count; $('speedRange').value = scene.speed; $('sizeRange').value = scene.size; $('glowRange').value = scene.glow;
+    $('colorSelect').value = scene.color; $('bgSelect').value = scene.background; $('interactionSelect').value = scene.interaction || 'repel'; $('trailRange').value = scene.trail == null ? 96 : scene.trail; $('trailOut').value = `${scene.trail == null ? 96 : scene.trail}%`;
+    $('speedOut').value = `${Number(scene.speed).toFixed(1)}×`; $('sizeOut').value = Number(scene.size).toFixed(1); $('glowOut').value = `${scene.glow}%`; syncCount(scene.count);
+    canvas.style.background = scene.background === 'transparent' ? 'transparent' : scene.background === 'black' ? '#000' : '';
+    updateStyleUI(scene.style); $('styleTitle').textContent = scene.title || ParticleEngine.styles[scene.style];
+    document.querySelectorAll('.preset-btn').forEach(b => b.classList.toggle('active', b.dataset.preset === scene.key));
+    if (notify) showToast(`已应用场景：${scene.title || '自定义场景'}`);
+  }
+  document.querySelectorAll('.preset-btn').forEach(button => button.addEventListener('click', () => {
+    const scene = scenePresets[button.dataset.preset]; if (scene) applyScene(Object.assign({ key:button.dataset.preset }, scene));
+  }));
+  $('savePresetBtn').addEventListener('click', () => {
+    const config = engine.getConfig(); config.savedAt = new Date().toISOString();
+    try { localStorage.setItem('neon-particle-studio-preset', JSON.stringify(config)); showToast('已保存在本浏览器；下次打开仍可恢复'); }
+    catch (_) { showToast('浏览器不允许本地保存，请使用“导出配置”'); }
+  });
+  $('sharePresetBtn').addEventListener('click', async () => {
+    const o = engine.options; const url = new URL(location.href);
+    Object.entries({style:o.style === 'target' ? 'network' : o.style, count:o.count, speed:o.speed, size:o.size, glow:o.glow, color:o.color, background:o.background, interaction:o.interaction || 'repel', trail:o.trail == null ? 96 : o.trail}).forEach(([k,v]) => url.searchParams.set(k, v));
+    try { await navigator.clipboard.writeText(url.toString()); showToast('分享链接已复制，可发送给别人打开'); }
+    catch (_) { window.prompt('复制下面的分享链接：', url.toString()); }
+  });
+  // Restore a saved scene when the user asks to save again, and restore shareable URL parameters on load.
+  const hasSharedParams = ['count','speed','size','glow','color','background'].some(k => params.has(k));
+  if (hasSharedParams) {
+    const shared = { style:initialStyle, count:clampParam(params.get('count'),120,1600,650), speed:clampParam(params.get('speed'),0.2,2.8,1), size:clampParam(params.get('size'),0.6,4.5,2), glow:clampParam(params.get('glow'),0,100,70), color:params.get('color') || 'neon', background:params.get('background') || 'dark', interaction:params.get('interaction') || 'repel', trail:clampParam(params.get('trail'),75,100,96), title:'分享场景' };
+    if (!['neon','cyan','sunset','gold','mono','rainbow'].includes(shared.color)) shared.color='neon';
+    if (!['dark','black','transparent'].includes(shared.background)) shared.background='dark'; if (!['repel','attract','none'].includes(shared.interaction)) shared.interaction='repel';
+    applyScene(shared, false);
+  } else {
+    try { const saved = JSON.parse(localStorage.getItem('neon-particle-studio-preset') || 'null'); if (saved && ParticleEngine.styles[saved.style]) applyScene(saved, false); } catch (_) { /* ignore unavailable local storage */ }
+  }
+  function clampParam(value,min,max,fallback) { const n=Number(value); return value !== null && Number.isFinite(n) ? Math.min(max,Math.max(min,n)) : fallback; }
+  $('countRange').addEventListener('input', e => { const n = Number(e.target.value); engine.setCount(n); syncCount(n); });
+  $('speedRange').addEventListener('input', e => { engine.options.speed = Number(e.target.value); $('speedOut').value = `${Number(e.target.value).toFixed(1)}×`; });
+  $('sizeRange').addEventListener('input', e => { engine.options.size = Number(e.target.value); $('sizeOut').value = Number(e.target.value).toFixed(1); });
+  $('glowRange').addEventListener('input', e => { engine.options.glow = Number(e.target.value); $('glowOut').value = `${e.target.value}%`; });
+  $('colorSelect').addEventListener('change', e => { engine.options.color = e.target.value; });
+  $('bgSelect').addEventListener('change', e => { engine.options.background = e.target.value; canvas.style.background = e.target.value === 'transparent' ? 'transparent' : e.target.value === 'black' ? '#000' : ''; });
+  $('interactionSelect').addEventListener('change', e => { engine.options.interaction = e.target.value; showToast(`鼠标力场：${e.target.options[e.target.selectedIndex].text}`); });
+  $('trailRange').addEventListener('input', e => { engine.options.trail = Number(e.target.value); $('trailOut').value = `${e.target.value}%`; });
+  $('gatherTextBtn').addEventListener('click', () => {
+    const text = $('textInput').value.trim(); if (!text) return showToast('先输入想要聚合的文字');
+    if (engine.gatherText(text)) { updateStyleUI('target'); $('styleTitle').textContent = `文字聚合 · ${text}`; $('modeTag').textContent = 'TEXT MASK / CUSTOM'; showToast('文字粒子化完成'); }
+  });
+  $('textInput').addEventListener('keydown', e => { if (e.key === 'Enter') $('gatherTextBtn').click(); });
+  $('imageInput').addEventListener('change', e => {
+    const file = e.target.files && e.target.files[0]; if (!file) return;
+    if (!file.type.startsWith('image/')) return showToast('请选择图片文件');
+    const url = URL.createObjectURL(file), image = new Image();
+    image.onload = () => { try { if (engine.gatherImage(image)) { updateStyleUI('target'); $('styleTitle').textContent = 'Logo / 图片聚合'; $('modeTag').textContent = 'IMAGE MASK / LOCAL'; showToast('图片已转为粒子目标'); } else showToast('未采样到有效像素，换一张对比更明显的图片试试'); } catch (err) { console.error(err); showToast('图片处理失败，请尝试 PNG 或 JPG'); } finally { URL.revokeObjectURL(url); $('imageInput').value = ''; } };
+    image.onerror = () => { URL.revokeObjectURL(url); showToast('无法读取这张图片'); }; image.src = url;
+  });
+  $('scatterBtn').addEventListener('click', () => { engine.scatter(); updateStyleUI(engine.options.style); $('styleTitle').textContent = '粒子自由散开'; $('modeTag').textContent = 'SCATTER / FREE'; showToast('粒子已散开'); });
+  $('explodeBtn').addEventListener('click', () => { engine.explode(); showToast('粒子爆发！'); });
+  $('clearTargetBtn').addEventListener('click', () => { engine.clearTarget(); updateStyleUI(engine.options.style); showToast('已清除文字 / 图片目标'); });
+  $('pauseBtn').addEventListener('click', () => { const running = engine.pause(); $('pauseBtn').textContent = running ? 'Ⅱ' : '▶'; $('pauseBtn').title = running ? '暂停' : '继续'; showToast(running ? '动画已继续' : '动画已暂停'); });
+  $('fullscreenBtn').addEventListener('click', async () => {
+    const target = $('canvasWrap');
+    try { if (!document.fullscreenElement) { if (target.requestFullscreen) await target.requestFullscreen(); else target.classList.add('fullscreen-stage'); } else if (document.exitFullscreen) await document.exitFullscreen(); }
+    catch (_) { target.classList.toggle('fullscreen-stage'); }
+  });
+  document.addEventListener('fullscreenchange', () => { if (!document.fullscreenElement) $('canvasWrap').classList.remove('fullscreen-stage'); setTimeout(() => engine.resize(), 80); });
+  $('resetBtn').addEventListener('click', () => {
+    $('countRange').value = 650; $('speedRange').value = 1; $('sizeRange').value = 2; $('glowRange').value = 70; $('colorSelect').value = 'neon'; $('bgSelect').value = 'dark'; $('textInput').value = 'PARTICLE';
+    engine.setOptions({ count: 650, speed: 1, size: 2, glow: 70, color: 'neon', background: 'dark', style: 'network', interaction: 'repel', trail: 96 }); engine.clearTarget(); engine.setStyle('network');
+    $('speedOut').value = '1.0×'; $('sizeOut').value = '2.0'; $('glowOut').value = '70%'; $('interactionSelect').value='repel'; $('trailRange').value=96; $('trailOut').value='96%'; syncCount(650); updateStyleUI('network'); $('styleTitle').textContent = '科技网络'; showToast('已恢复默认参数');
+  });
+  function download(name, content, type) { const blob = new Blob([content], { type }); const url = URL.createObjectURL(blob); const a = document.createElement('a'); a.href = url; a.download = name; document.body.appendChild(a); a.click(); a.remove(); setTimeout(() => URL.revokeObjectURL(url), 900); }
+  $('exportConfigBtn').addEventListener('click', () => { const config = engine.getConfig(); config.exportedAt = new Date().toISOString(); download('particle-config.json', JSON.stringify(config, null, 2), 'application/json'); showToast('配置 JSON 已导出'); });
+  $('importConfigBtn').addEventListener('click', () => $('configFileInput').click());
+  $('configFileInput').addEventListener('change', async e => {
+    const file = e.target.files && e.target.files[0]; if (!file) return;
+    try { const cfg = JSON.parse(await file.text()); const allowed = Object.keys(ParticleEngine.styles);
+      const clean = { style: allowed.includes(cfg.style) ? cfg.style : 'network', count: clampParam(String(cfg.count),120,1600,650), speed: clampParam(String(cfg.speed),.2,2.8,1), size: clampParam(String(cfg.size),.6,4.5,2), glow: clampParam(String(cfg.glow),0,100,70), color:['neon','cyan','sunset','gold','mono','rainbow'].includes(cfg.color)?cfg.color:'neon', background:['dark','black','transparent'].includes(cfg.background)?cfg.background:'dark', interaction:['repel','attract','none'].includes(cfg.interaction)?cfg.interaction:'repel', trail:clampParam(String(cfg.trail),75,100,96), title:'导入场景' }; applyScene(clean); showToast('配置已导入');
+    } catch (_) { showToast('配置文件无法解析，请选择有效的粒子配置 JSON'); } finally { e.target.value = ''; }
+  });
+  $('exportCodeBtn').addEventListener('click', () => {
+    const code = `<!-- 1. 把 particle.js 和 particle.css 放到你的网站目录 -->\n<link rel="stylesheet" href="particle.css">\n<div class="particle-hero" style="position:relative;height:500px;overflow:hidden;background:#060916">\n  <canvas id="site-particles" style="width:100%;height:100%;display:block"></canvas>\n</div>\n<script src="particle.js"><\/script>\n<script>\n  const particles = new ParticleEngine(document.getElementById('site-particles'), {\n    style: '${engine.options.style === 'target' ? 'network' : engine.options.style}', // network, wave, vortex, galaxy, fire, rain, ink, geometric, fluid, aurora, orbit, matrix\n    count: ${engine.options.count}, speed: ${engine.options.speed}, size: ${engine.options.size},\n    glow: ${engine.options.glow}, color: '${engine.options.color}', background: '${engine.options.background}', interaction: '${engine.options.interaction || 'repel'}', trail: ${engine.options.trail == null ? 96 : engine.options.trail}\n  });\n  // 交互：particles.setStyle('aurora'); particles.gatherText('HELLO'); particles.explode();\n<\/script>\n`;
+    download('particle-embed-snippet.html.txt', code, 'text/plain;charset=utf-8'); showToast('嵌入代码片段已导出');
+  });
+  // Performance polish: avoid background-tab work and keep telemetry loop dormant when hidden.
+  let statsRaf = 0;
+  function stats(now) {
+    if (document.hidden) { statsRaf = 0; return; }
+    frameCount++;
+    if (now - fpsTime > 700) {
+      $('fpsLabel').textContent = `${Math.round(frameCount * 1000 / (now - fpsTime))} FPS`;
+      frameCount = 0; fpsTime = now;
+      const r = canvas.getBoundingClientRect();
+      $('canvasSizeLabel').textContent = `${Math.round(r.width)} × ${Math.round(r.height)}`;
+    }
+    statsRaf = requestAnimationFrame(stats);
+  }
+  function startStats() { if (!statsRaf && !document.hidden) { fpsTime = performance.now(); frameCount = 0; statsRaf = requestAnimationFrame(stats); } }
+  document.addEventListener('visibilitychange', () => {
+    if (document.hidden) {
+      if (statsRaf) cancelAnimationFrame(statsRaf);
+      statsRaf = 0;
+      if (engine && typeof engine.pause === 'function' && !engine._userPaused) {
+        engine._pausedByVisibility = true; engine.pause(true);
+      }
+    } else {
+      if (engine && engine._pausedByVisibility) {
+        engine._pausedByVisibility = false; engine.pause(false);
+      }
+      startStats();
+      setTimeout(() => engine.resize(), 80);
+    }
+  });
+  syncCount(650); updateStyleUI(initialStyle); startStats();
+
+  // Keyboard shortcuts: Space pause/resume, R reset, E explode, F fullscreen.
+  document.addEventListener('keydown', e => {
+    if (e.target && /INPUT|TEXTAREA|SELECT/.test(e.target.tagName)) return;
+    if (e.code === 'Space') { e.preventDefault(); $('pauseBtn').click(); }
+    else if (e.key.toLowerCase() === 'r') $('resetBtn').click();
+    else if (e.key.toLowerCase() === 'e') $('explodeBtn').click();
+    else if (e.key.toLowerCase() === 'f') $('fullscreenBtn').click();
+  });
+  // In reduced-motion mode, the page still works, but starts paused to respect the OS preference.
+  if (matchMedia('(prefers-reduced-motion: reduce)').matches) { engine.pause(true); $('pauseBtn').textContent = '▶'; }
+  window.addEventListener('beforeunload', () => { if (statsRaf) cancelAnimationFrame(statsRaf); engine.destroy(); });
+  window.particleStudio = engine;
+})();
+
+</script>
+</body></html>

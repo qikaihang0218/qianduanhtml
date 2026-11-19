@@ -1,0 +1,1721 @@
+<!DOCTYPE html>
+<html lang="zh-CN">
+<head>
+  <meta charset="UTF-8">
+  <meta name="viewport" content="width=device-width, initial-scale=1.0">
+  <title>🧰 全能格式化工具箱 · 嵌套 JSON 增强版</title>
+  <style>
+    * {
+      box-sizing: border-box;
+      margin: 0;
+      padding: 0;
+    }
+
+    body {
+      background: linear-gradient(145deg, #1a1c26 0%, #252838 100%);
+      min-height: 100vh;
+      display: flex;
+      align-items: center;
+      justify-content: center;
+      font-family: 'Inter', -apple-system, BlinkMacSystemFont, 'Segoe UI', Roboto, sans-serif;
+      padding: 20px;
+    }
+
+    .app {
+      background: rgba(22, 24, 35, 0.92);
+      backdrop-filter: blur(20px);
+      -webkit-backdrop-filter: blur(20px);
+      border-radius: 32px;
+      padding: 28px;
+      box-shadow: 0 30px 60px rgba(0, 0, 0, 0.75), 0 0 0 1px rgba(255, 255, 255, 0.06);
+      width: 100%;
+      max-width: 1280px;
+    }
+
+    /* Header */
+    .header {
+      display: flex;
+      align-items: center;
+      justify-content: space-between;
+      margin-bottom: 18px;
+      flex-wrap: wrap;
+      gap: 14px;
+    }
+
+    .header h1 {
+      color: #f0f2fa;
+      font-weight: 600;
+      font-size: 1.35rem;
+      letter-spacing: -0.02em;
+      display: flex;
+      align-items: center;
+      gap: 10px;
+    }
+
+    .header h1 .badge {
+      background: rgba(91, 140, 255, 0.15);
+      border: 1px solid rgba(91, 140, 255, 0.3);
+      color: #a7c0ff;
+      padding: 4px 12px;
+      border-radius: 100px;
+      font-size: 0.7rem;
+      font-weight: 500;
+      letter-spacing: 0.3px;
+    }
+
+    .toolbar {
+      display: flex;
+      gap: 8px;
+      flex-wrap: wrap;
+    }
+
+    .tool-btn {
+      background: rgba(255, 255, 255, 0.05);
+      border: 1px solid rgba(255, 255, 255, 0.08);
+      color: #c8d0e6;
+      padding: 8px 16px;
+      border-radius: 12px;
+      font-size: 0.8rem;
+      font-weight: 500;
+      cursor: pointer;
+      transition: all 0.15s;
+      display: flex;
+      align-items: center;
+      gap: 6px;
+      font-family: 'Inter', sans-serif;
+      letter-spacing: 0.2px;
+    }
+
+    .tool-btn:hover {
+      background: rgba(91, 140, 255, 0.18);
+      border-color: rgba(91, 140, 255, 0.4);
+      color: #fff;
+      transform: translateY(-1px);
+    }
+
+    .tool-btn:active {
+      transform: translateY(0) scale(0.97);
+    }
+
+    .tool-btn.primary {
+      background: rgba(91, 140, 255, 0.2);
+      border-color: rgba(91, 140, 255, 0.45);
+      color: #d6e2ff;
+    }
+
+    .tool-btn.primary:hover {
+      background: rgba(91, 140, 255, 0.32);
+      border-color: rgba(91, 140, 255, 0.7);
+      color: #fff;
+    }
+
+    .tool-btn.danger {
+      background: rgba(255, 71, 87, 0.1);
+      border-color: rgba(255, 71, 87, 0.25);
+      color: #ff9aa6;
+    }
+
+    .tool-btn.danger:hover {
+      background: rgba(255, 71, 87, 0.22);
+      border-color: rgba(255, 71, 87, 0.5);
+      color: #fff;
+    }
+
+    .tool-btn .icon {
+      font-size: 0.95rem;
+      line-height: 1;
+    }
+
+    /* 模式切换 */
+    .mode-switch {
+      display: flex;
+      gap: 4px;
+      background: rgba(0, 0, 0, 0.3);
+      padding: 4px;
+      border-radius: 14px;
+      margin-bottom: 18px;
+      border: 1px solid rgba(255, 255, 255, 0.04);
+      width: fit-content;
+      flex-wrap: wrap;
+    }
+
+    .mode-btn {
+      background: transparent;
+      border: none;
+      color: #9aa3bc;
+      padding: 8px 14px;
+      border-radius: 10px;
+      font-size: 0.76rem;
+      font-weight: 500;
+      cursor: pointer;
+      transition: all 0.15s;
+      font-family: 'Inter', sans-serif;
+      letter-spacing: 0.2px;
+      display: flex;
+      align-items: center;
+      gap: 6px;
+      white-space: nowrap;
+    }
+
+    .mode-btn:hover {
+      color: #d6e2ff;
+    }
+
+    .mode-btn.active {
+      background: rgba(91, 140, 255, 0.2);
+      color: #d6e2ff;
+      box-shadow: 0 1px 4px rgba(0, 0, 0, 0.3);
+    }
+
+    /* 操作行（编码/解码） */
+    .action-row {
+      display: flex;
+      gap: 8px;
+      margin-bottom: 14px;
+      flex-wrap: wrap;
+    }
+
+    .action-btn {
+      background: rgba(255, 255, 255, 0.05);
+      border: 1px solid rgba(255, 255, 255, 0.08);
+      color: #c8d0e6;
+      padding: 8px 18px;
+      border-radius: 12px;
+      font-size: 0.8rem;
+      font-weight: 500;
+      cursor: pointer;
+      transition: all 0.15s;
+      font-family: 'Inter', sans-serif;
+      letter-spacing: 0.2px;
+      display: flex;
+      align-items: center;
+      gap: 6px;
+    }
+
+    .action-btn:hover {
+      background: rgba(91, 140, 255, 0.18);
+      border-color: rgba(91, 140, 255, 0.4);
+      color: #fff;
+    }
+
+    .action-btn.active {
+      background: rgba(91, 140, 255, 0.25);
+      border-color: rgba(91, 140, 255, 0.5);
+      color: #d6e2ff;
+    }
+
+    /* 编辑器区域 */
+    .editors {
+      display: grid;
+      grid-template-columns: 1fr 1fr;
+      gap: 18px;
+      margin-bottom: 16px;
+    }
+
+    @media (max-width: 900px) {
+      .editors {
+        grid-template-columns: 1fr;
+      }
+    }
+
+    .editor-panel {
+      display: flex;
+      flex-direction: column;
+      gap: 8px;
+      min-width: 0;
+    }
+
+    .panel-header {
+      display: flex;
+      align-items: center;
+      justify-content: space-between;
+      padding: 0 4px;
+    }
+
+    .panel-title {
+      font-size: 0.78rem;
+      font-weight: 500;
+      color: #9aa3bc;
+      letter-spacing: 0.5px;
+      text-transform: uppercase;
+      display: flex;
+      align-items: center;
+      gap: 8px;
+    }
+
+    .panel-title .dot {
+      width: 7px;
+      height: 7px;
+      border-radius: 50%;
+      background: #5b8cff;
+      box-shadow: 0 0 8px rgba(91, 140, 255, 0.6);
+    }
+
+    .panel-title .dot.output {
+      background: #6bcb77;
+      box-shadow: 0 0 8px rgba(107, 203, 119, 0.6);
+    }
+
+    .panel-meta {
+      font-size: 0.68rem;
+      color: #6f7a99;
+      font-family: 'SF Mono', monospace;
+    }
+
+    .editor-wrapper {
+      position: relative;
+      border-radius: 20px;
+      overflow: hidden;
+      background: #12131c;
+      border: 1px solid rgba(255, 255, 255, 0.06);
+      transition: border-color 0.2s, box-shadow 0.2s;
+      box-shadow: inset 0 2px 8px rgba(0, 0, 0, 0.4);
+    }
+
+    .editor-wrapper:focus-within {
+      border-color: rgba(91, 140, 255, 0.5);
+      box-shadow: inset 0 2px 8px rgba(0, 0, 0, 0.4), 0 0 0 3px rgba(91, 140, 255, 0.12);
+    }
+
+    .editor-wrapper.error {
+      border-color: rgba(255, 71, 87, 0.6);
+      box-shadow: inset 0 2px 8px rgba(0, 0, 0, 0.4), 0 0 0 3px rgba(255, 71, 87, 0.1);
+    }
+
+    .editor-wrapper.valid {
+      border-color: rgba(107, 203, 119, 0.4);
+    }
+
+    textarea {
+      width: 100%;
+      height: 440px;
+      background: transparent;
+      border: none;
+      outline: none;
+      resize: none;
+      padding: 16px 18px;
+      color: #e6ecff;
+      font-family: 'SF Mono', 'Fira Code', 'JetBrains Mono', 'Consolas', monospace;
+      font-size: 0.78rem;
+      line-height: 1.7;
+      tab-size: 2;
+      caret-color: #5b8cff;
+      white-space: pre;
+      overflow: auto;
+    }
+
+    textarea::placeholder {
+      color: #4a5268;
+      font-family: 'Inter', sans-serif;
+      font-size: 0.85rem;
+      line-height: 1.6;
+    }
+
+    textarea::-webkit-scrollbar {
+      width: 8px;
+      height: 8px;
+    }
+
+    textarea::-webkit-scrollbar-track {
+      background: transparent;
+    }
+
+    textarea::-webkit-scrollbar-thumb {
+      background: rgba(255, 255, 255, 0.1);
+      border-radius: 100px;
+    }
+
+    textarea::-webkit-scrollbar-thumb:hover {
+      background: rgba(255, 255, 255, 0.2);
+    }
+
+    #outputArea {
+      color: #b8d4ff;
+      cursor: text;
+    }
+
+    /* 状态栏 */
+    .status-bar {
+      display: flex;
+      align-items: center;
+      gap: 14px;
+      padding: 10px 18px;
+      border-radius: 14px;
+      background: rgba(0, 0, 0, 0.25);
+      border: 1px solid rgba(255, 255, 255, 0.04);
+      font-size: 0.75rem;
+      flex-wrap: wrap;
+      transition: all 0.2s;
+    }
+
+    .status-bar .status-icon {
+      font-size: 1rem;
+      line-height: 1;
+    }
+
+    .status-bar .status-text {
+      flex: 1;
+      min-width: 120px;
+      color: #9aa3bc;
+      letter-spacing: 0.2px;
+    }
+
+    .status-bar .status-text.success {
+      color: #7ddb8a;
+    }
+
+    .status-bar .status-text.error {
+      color: #ff8a95;
+    }
+
+    .status-bar .stat-item {
+      display: flex;
+      align-items: center;
+      gap: 6px;
+      color: #6f7a99;
+      font-family: 'SF Mono', monospace;
+      font-size: 0.7rem;
+    }
+
+    .status-bar .stat-item .stat-value {
+      color: #c8d0e6;
+      font-weight: 500;
+    }
+
+    /* 选项行 */
+    .options-row {
+      display: flex;
+      align-items: center;
+      gap: 20px;
+      padding: 10px 18px;
+      margin-top: 4px;
+      flex-wrap: wrap;
+    }
+
+    .option-item {
+      display: flex;
+      align-items: center;
+      gap: 8px;
+      font-size: 0.78rem;
+      color: #9aa3bc;
+      cursor: pointer;
+      user-select: none;
+    }
+
+    .option-item input[type="checkbox"] {
+      appearance: none;
+      -webkit-appearance: none;
+      width: 16px;
+      height: 16px;
+      border-radius: 5px;
+      border: 1.5px solid rgba(255, 255, 255, 0.15);
+      background: rgba(255, 255, 255, 0.03);
+      cursor: pointer;
+      position: relative;
+      transition: all 0.15s;
+      flex-shrink: 0;
+    }
+
+    .option-item input[type="checkbox"]:checked {
+      background: #5b8cff;
+      border-color: #5b8cff;
+    }
+
+    .option-item input[type="checkbox"]:checked::after {
+      content: "✓";
+      position: absolute;
+      top: 50%;
+      left: 50%;
+      transform: translate(-50%, -50%);
+      color: #fff;
+      font-size: 0.65rem;
+      font-weight: 700;
+    }
+
+    .option-item input[type="checkbox"]:hover {
+      border-color: rgba(91, 140, 255, 0.5);
+    }
+
+    .option-item .option-label {
+      letter-spacing: 0.2px;
+    }
+
+    /* 缩进选择 */
+    .indent-select {
+      appearance: none;
+      -webkit-appearance: none;
+      background: rgba(255, 255, 255, 0.05);
+      border: 1px solid rgba(255, 255, 255, 0.1);
+      color: #c8d0e6;
+      padding: 4px 26px 4px 10px;
+      border-radius: 8px;
+      font-size: 0.75rem;
+      cursor: pointer;
+      font-family: 'Inter', sans-serif;
+      background-image: url("data:image/svg+xml,%3Csvg xmlns='http://www.w3.org/2000/svg' width='10' height='6' viewBox='0 0 10 6'%3E%3Cpath d='M1 1l4 4 4-4' stroke='%239aa3bc' stroke-width='1.5' fill='none' stroke-linecap='round'/%3E%3C/svg%3E");
+      background-repeat: no-repeat;
+      background-position: right 8px center;
+      outline: none;
+      transition: border-color 0.15s;
+    }
+
+    .indent-select:hover {
+      border-color: rgba(91, 140, 255, 0.4);
+    }
+
+    .indent-select:focus {
+      border-color: #5b8cff;
+    }
+
+    .indent-select option {
+      background: #1e2030;
+      color: #eef2ff;
+    }
+
+    /* Toast */
+    .toast {
+      position: fixed;
+      bottom: 30px;
+      left: 50%;
+      transform: translateX(-50%) translateY(20px);
+      background: #2d3a5e;
+      color: #eef2ff;
+      padding: 12px 26px;
+      border-radius: 100px;
+      font-size: 0.85rem;
+      font-weight: 500;
+      box-shadow: 0 12px 32px rgba(0, 0, 0, 0.75);
+      border: 1px solid rgba(255, 255, 255, 0.12);
+      opacity: 0;
+      pointer-events: none;
+      transition: all 0.28s cubic-bezier(0.34, 1.56, 0.64, 1);
+      z-index: 1000;
+      font-family: 'Inter', sans-serif;
+      backdrop-filter: blur(10px);
+      display: flex;
+      align-items: center;
+      gap: 8px;
+      letter-spacing: 0.2px;
+      max-width: 90vw;
+    }
+
+    .toast.show {
+      opacity: 1;
+      transform: translateX(-50%) translateY(0);
+    }
+
+    .toast.success {
+      background: #1e3a2a;
+      border-color: rgba(107, 203, 119, 0.4);
+      color: #b8f5c4;
+    }
+
+    .toast.error {
+      background: #3a1e24;
+      border-color: rgba(255, 71, 87, 0.4);
+      color: #ffc4ca;
+    }
+
+    /* 提示信息 */
+    .hint-box {
+      margin-top: 14px;
+      padding: 12px 18px;
+      border-radius: 14px;
+      background: rgba(91, 140, 255, 0.06);
+      border: 1px solid rgba(91, 140, 255, 0.15);
+      font-size: 0.72rem;
+      color: #8b9cc9;
+      line-height: 1.6;
+      display: flex;
+      gap: 10px;
+      align-items: flex-start;
+    }
+
+    .hint-box .hint-icon {
+      font-size: 1rem;
+      flex-shrink: 0;
+      margin-top: 1px;
+    }
+
+    .hint-box .hint-content {
+      flex: 1;
+    }
+
+    .hint-box .hint-content strong {
+      color: #b8c8f0;
+      font-weight: 600;
+    }
+
+    .hint-box code {
+      background: rgba(0, 0, 0, 0.3);
+      padding: 1px 6px;
+      border-radius: 5px;
+      font-family: 'SF Mono', monospace;
+      font-size: 0.7rem;
+      color: #a7c0ff;
+    }
+
+    /* 快捷键提示 */
+    .shortcut-hint {
+      display: flex;
+      align-items: center;
+      gap: 16px;
+      margin-top: 14px;
+      padding-left: 4px;
+      font-size: 0.68rem;
+      color: #5c6680;
+      flex-wrap: wrap;
+    }
+
+    .shortcut-hint kbd {
+      background: rgba(255, 255, 255, 0.06);
+      border: 1px solid rgba(255, 255, 255, 0.1);
+      border-radius: 5px;
+      padding: 1px 6px;
+      font-family: 'SF Mono', monospace;
+      font-size: 0.65rem;
+      color: #9aa3bc;
+      box-shadow: 0 1px 0 rgba(0, 0, 0, 0.3);
+    }
+
+    @media (max-width: 600px) {
+      .app {
+        padding: 20px;
+        border-radius: 26px;
+      }
+      .header h1 {
+        font-size: 1.15rem;
+      }
+      textarea {
+        height: 320px;
+        font-size: 0.75rem;
+        padding: 14px;
+      }
+      .tool-btn {
+        padding: 7px 12px;
+        font-size: 0.75rem;
+      }
+      .mode-btn {
+        padding: 7px 12px;
+        font-size: 0.7rem;
+      }
+    }
+  </style>
+</head>
+<body>
+  <div class="app">
+    <!-- Header -->
+    <div class="header">
+      <h1>🧰 全能格式化工具箱 <span class="badge">8 合一 · 嵌套增强</span></h1>
+      <div class="toolbar">
+        <button class="tool-btn primary" id="formatBtn"><span class="icon">✨</span> 执行</button>
+        <button class="tool-btn" id="copyBtn"><span class="icon">📋</span> 复制</button>
+        <button class="tool-btn" id="downloadBtn"><span class="icon">⬇️</span> 下载</button>
+        <button class="tool-btn danger" id="clearBtn"><span class="icon">🗑️</span> 清空</button>
+      </div>
+    </div>
+
+    <!-- 模式切换 -->
+    <div class="mode-switch" id="modeSwitch">
+      <button class="mode-btn active" data-mode="json"><span>📋</span> JSON</button>
+      <button class="mode-btn" data-mode="xml"><span>📄</span> XML</button>
+      <button class="mode-btn" data-mode="html"><span>🌐</span> HTML</button>
+      <button class="mode-btn" data-mode="css"><span>🎨</span> CSS</button>
+      <button class="mode-btn" data-mode="sql"><span>🗄️</span> SQL</button>
+      <button class="mode-btn" data-mode="url"><span>🔗</span> URL</button>
+      <button class="mode-btn" data-mode="base64"><span>🔐</span> Base64</button>
+      <button class="mode-btn" data-mode="log"><span>📜</span> 日志</button>
+    </div>
+
+    <!-- URL/Base64 操作行 -->
+    <div class="action-row" id="actionRow" style="display:none;">
+      <button class="action-btn active" id="encodeBtn">🔒 编码 / 转义</button>
+      <button class="action-btn" id="decodeBtn">🔓 解码 / 还原</button>
+    </div>
+
+    <!-- 编辑器区域 -->
+    <div class="editors">
+      <div class="editor-panel">
+        <div class="panel-header">
+          <span class="panel-title"><span class="dot"></span> 输入</span>
+          <span class="panel-meta" id="inputMeta">0 字符</span>
+        </div>
+        <div class="editor-wrapper" id="inputWrapper">
+          <textarea id="inputArea" placeholder="在此粘贴内容..." spellcheck="false"></textarea>
+        </div>
+      </div>
+
+      <div class="editor-panel">
+        <div class="panel-header">
+          <span class="panel-title"><span class="dot output"></span> 输出</span>
+          <span class="panel-meta" id="outputMeta">0 字符</span>
+        </div>
+        <div class="editor-wrapper" id="outputWrapper">
+          <textarea id="outputArea" readonly placeholder="处理结果将显示在这里..."></textarea>
+        </div>
+      </div>
+    </div>
+
+    <!-- 选项行 -->
+    <div class="options-row">
+      <label class="option-item" id="sortKeysOption">
+        <input type="checkbox" id="sortKeys" />
+        <span class="option-label">按键名排序</span>
+      </label>
+      <label class="option-item" id="expandNestedOption">
+        <input type="checkbox" id="expandNested" checked />
+        <span class="option-label">展开嵌套 JSON 字符串</span>
+      </label>
+      <label class="option-item">
+        <span class="option-label">缩进</span>
+        <select class="indent-select" id="indentSelect">
+          <option value="2" selected>2 空格</option>
+          <option value="4">4 空格</option>
+          <option value="1">1 空格</option>
+          <option value="\t">Tab</option>
+        </select>
+      </label>
+      <label class="option-item">
+        <input type="checkbox" id="autoFormat" checked />
+        <span class="option-label">自动执行</span>
+      </label>
+    </div>
+
+    <!-- 状态栏 -->
+    <div class="status-bar" id="statusBar">
+      <span class="status-icon">💡</span>
+      <span class="status-text" id="statusText">等待输入...</span>
+      <span class="stat-item">字符 <span class="stat-value" id="charCount">0</span></span>
+      <span class="stat-item">行数 <span class="stat-value" id="lineCount">0</span></span>
+    </div>
+
+    <!-- 提示 -->
+    <div class="hint-box">
+      <span class="hint-icon">💡</span>
+      <div class="hint-content" id="hintContent">
+        请在上方选择要使用的工具。JSON / XML / HTML / CSS / SQL 为格式化工具，URL / Base64 支持编码解码，日志模式自动提取并格式化其中的 JSON 片段。
+        <br><strong>✨ 嵌套增强：</strong>当开启「展开嵌套 JSON 字符串」时，若字段的值是合法 JSON 字符串（如 <code>extendInfo</code>），会自动解析并美化，实现多层嵌套的完整展示。
+      </div>
+    </div>
+
+    <!-- 快捷键提示 -->
+    <div class="shortcut-hint">
+      <span><kbd>Ctrl</kbd> + <kbd>Enter</kbd> 执行</span>
+      <span><kbd>Ctrl</kbd> + <kbd>Shift</kbd> + <kbd>K</kbd> 清空</span>
+      <span><kbd>Ctrl</kbd> + <kbd>Shift</kbd> + <kbd>E</kbd> 编码</span>
+      <span><kbd>Ctrl</kbd> + <kbd>Shift</kbd> + <kbd>D</kbd> 解码</span>
+    </div>
+  </div>
+
+  <div class="toast" id="toast">📋 已复制</div>
+
+  <script>
+    (function() {
+      // ---------- 元素 ----------
+      const inputArea = document.getElementById('inputArea');
+      const outputArea = document.getElementById('outputArea');
+      const inputWrapper = document.getElementById('inputWrapper');
+      const outputWrapper = document.getElementById('outputWrapper');
+      const inputMeta = document.getElementById('inputMeta');
+      const outputMeta = document.getElementById('outputMeta');
+      const statusText = document.getElementById('statusText');
+      const statusBar = document.getElementById('statusBar');
+      const charCount = document.getElementById('charCount');
+      const lineCount = document.getElementById('lineCount');
+      const sortKeys = document.getElementById('sortKeys');
+      const expandNested = document.getElementById('expandNested');
+      const indentSelect = document.getElementById('indentSelect');
+      const autoFormat = document.getElementById('autoFormat');
+      const toast = document.getElementById('toast');
+      const hintContent = document.getElementById('hintContent');
+      const sortKeysOption = document.getElementById('sortKeysOption');
+      const expandNestedOption = document.getElementById('expandNestedOption');
+      const actionRow = document.getElementById('actionRow');
+      const encodeBtn = document.getElementById('encodeBtn');
+      const decodeBtn = document.getElementById('decodeBtn');
+
+      const formatBtn = document.getElementById('formatBtn');
+      const copyBtn = document.getElementById('copyBtn');
+      const downloadBtn = document.getElementById('downloadBtn');
+      const clearBtn = document.getElementById('clearBtn');
+
+      const modeBtns = document.querySelectorAll('.mode-btn');
+
+      let toastTimer = null;
+      let currentMode = 'json';
+      let currentAction = 'encode';
+
+      // ---------- 工具函数 ----------
+      function showToast(message, type = '') {
+        toast.textContent = message;
+        toast.className = 'toast' + (type ? ' ' + type : '');
+        toast.classList.add('show');
+        if (toastTimer) clearTimeout(toastTimer);
+        toastTimer = setTimeout(() => toast.classList.remove('show'), 2200);
+      }
+
+      function getIndent() {
+        const val = indentSelect.value;
+        if (val === '\\t' || val === 'Tab') return '\t';
+        return parseInt(val, 10) || 2;
+      }
+
+      function getIndentStr() {
+        const val = indentSelect.value;
+        if (val === '\\t' || val === 'Tab') return '\t';
+        return ' '.repeat(parseInt(val, 10) || 2);
+      }
+
+      function sortObjectKeys(obj) {
+        if (obj === null || typeof obj !== 'object') return obj;
+        if (Array.isArray(obj)) return obj.map(sortObjectKeys);
+        const sorted = {};
+        Object.keys(obj).sort().forEach(key => {
+          sorted[key] = sortObjectKeys(obj[key]);
+        });
+        return sorted;
+      }
+
+      // ---------- 核心增强：递归展开嵌套 JSON 字符串 ----------
+      // 尝试解析字符串值，若为合法 JSON 对象/数组则递归处理
+      function expandNestedJson(value, depth = 0) {
+        // 防止无限递归（如自身引用的字符串几乎不可能，但保险）
+        if (depth > 20) return value;
+
+        if (typeof value === 'string') {
+          const trimmed = value.trim();
+          // 快速判断是否可能为 JSON 对象或数组
+          if ((trimmed.startsWith('{') && trimmed.endsWith('}')) ||
+              (trimmed.startsWith('[') && trimmed.endsWith(']'))) {
+            try {
+              const parsed = JSON.parse(trimmed);
+              if (typeof parsed === 'object' && parsed !== null) {
+                // 递归处理解析后的对象
+                return expandNestedJson(parsed, depth + 1);
+              }
+            } catch (e) {
+              // 不是合法 JSON，保持原字符串
+            }
+          }
+          return value;
+        }
+
+        if (Array.isArray(value)) {
+          return value.map(item => expandNestedJson(item, depth + 1));
+        }
+
+        if (value !== null && typeof value === 'object') {
+          const result = {};
+          for (const key of Object.keys(value)) {
+            result[key] = expandNestedJson(value[key], depth + 1);
+          }
+          return result;
+        }
+
+        return value;
+      }
+
+      // ============ JSON 格式化（增强版）============
+      function formatJSON(raw) {
+        let parsed = JSON.parse(raw);
+
+        // 展开嵌套 JSON 字符串
+        if (expandNested.checked) {
+          parsed = expandNestedJson(parsed);
+        }
+
+        if (sortKeys.checked) parsed = sortObjectKeys(parsed);
+        return JSON.stringify(parsed, null, getIndent());
+      }
+
+      // ============ XML ============
+      function formatXML(raw) {
+        if (!raw.trim()) throw new Error('输入为空');
+        const trimmed = raw.trim();
+        let xmlDecl = '';
+        const declMatch = trimmed.match(/^<\?xml[^>]*\?>/);
+        let body = trimmed;
+        if (declMatch) {
+          xmlDecl = declMatch[0];
+          body = trimmed.slice(xmlDecl.length).trim();
+        }
+
+        const parser = new DOMParser();
+        const doc = parser.parseFromString(body, 'text/xml');
+        const parseError = doc.querySelector('parsererror');
+        if (parseError) {
+          throw new Error('XML 解析错误：' + parseError.textContent.trim().split('\n')[0]);
+        }
+
+        const indentStr = getIndentStr();
+
+        function formatNode(node, depth) {
+          const pad = indentStr.repeat(depth);
+          if (node.nodeType === Node.TEXT_NODE) {
+            const text = node.textContent.trim();
+            if (!text) return '';
+            return pad + text;
+          }
+          if (node.nodeType === Node.COMMENT_NODE) {
+            return pad + '<!--' + node.textContent + '-->';
+          }
+          if (node.nodeType !== Node.ELEMENT_NODE) return '';
+
+          const tagName = node.tagName;
+          let attrs = '';
+          if (node.attributes && node.attributes.length > 0) {
+            const attrList = [];
+            for (let i = 0; i < node.attributes.length; i++) {
+              const attr = node.attributes[i];
+              attrList.push(`${attr.name}="${attr.value}"`);
+            }
+            attrs = ' ' + attrList.join(' ');
+          }
+
+          const children = [];
+          for (let i = 0; i < node.childNodes.length; i++) {
+            const child = node.childNodes[i];
+            if (child.nodeType === Node.TEXT_NODE) {
+              const text = child.textContent.trim();
+              if (text) children.push({ type: 'text', content: text });
+            } else if (child.nodeType === Node.ELEMENT_NODE || child.nodeType === Node.COMMENT_NODE) {
+              children.push({ type: 'node', node: child });
+            }
+          }
+
+          if (children.length === 0) {
+            return pad + `<${tagName}${attrs}></${tagName}>`;
+          }
+          if (children.length === 1 && children[0].type === 'text') {
+            return pad + `<${tagName}${attrs}>${children[0].content}</${tagName}>`;
+          }
+
+          const innerParts = [];
+          children.forEach(child => {
+            if (child.type === 'text') {
+              innerParts.push(indentStr.repeat(depth + 1) + child.content);
+            } else {
+              const formatted = formatNode(child.node, depth + 1);
+              if (formatted) innerParts.push(formatted);
+            }
+          });
+
+          return pad + `<${tagName}${attrs}>\n` + innerParts.join('\n') + '\n' + pad + `</${tagName}>`;
+        }
+
+        let result = formatNode(doc.documentElement, 0);
+        if (xmlDecl) result = xmlDecl + '\n' + result;
+        return result;
+      }
+
+      // ============ HTML 格式化 ============
+      function formatHTML(raw) {
+        if (!raw.trim()) throw new Error('输入为空');
+        const trimmed = raw.trim();
+
+        const parser = new DOMParser();
+        const doc = parser.parseFromString(trimmed, 'text/html');
+        const parseError = doc.querySelector('parsererror');
+        if (parseError) {
+          throw new Error('HTML 解析错误：' + parseError.textContent.trim().split('\n')[0]);
+        }
+
+        const indentStr = getIndentStr();
+        const voidElements = new Set([
+          'area', 'base', 'br', 'col', 'embed', 'hr', 'img', 'input',
+          'link', 'meta', 'param', 'source', 'track', 'wbr'
+        ]);
+
+        function formatNode(node, depth) {
+          const pad = indentStr.repeat(depth);
+
+          if (node.nodeType === Node.TEXT_NODE) {
+            const text = node.textContent.trim();
+            if (!text) return '';
+            const escaped = text.replace(/&/g, '&amp;').replace(/</g, '&lt;').replace(/>/g, '&gt;');
+            return pad + escaped;
+          }
+
+          if (node.nodeType === Node.COMMENT_NODE) {
+            return pad + '<!--' + node.textContent + '-->';
+          }
+
+          if (node.nodeType === Node.DOCUMENT_TYPE_NODE) {
+            return pad + '<!DOCTYPE ' + node.name + '>';
+          }
+
+          if (node.nodeType !== Node.ELEMENT_NODE) return '';
+
+          const tagName = node.tagName.toLowerCase();
+          let attrs = '';
+          if (node.attributes && node.attributes.length > 0) {
+            const attrList = [];
+            for (let i = 0; i < node.attributes.length; i++) {
+              const attr = node.attributes[i];
+              attrList.push(`${attr.name}="${attr.value.replace(/"/g, '&quot;')}"`);
+            }
+            attrs = ' ' + attrList.join(' ');
+          }
+
+          if (voidElements.has(tagName)) {
+            return pad + `<${tagName}${attrs}>`;
+          }
+
+          const children = [];
+          for (let i = 0; i < node.childNodes.length; i++) {
+            const child = node.childNodes[i];
+            if (child.nodeType === Node.TEXT_NODE) {
+              const text = child.textContent.trim();
+              if (text) children.push({ type: 'text', content: text });
+            } else if (child.nodeType === Node.ELEMENT_NODE || child.nodeType === Node.COMMENT_NODE) {
+              children.push({ type: 'node', node: child });
+            }
+          }
+
+          if (children.length === 0) {
+            return pad + `<${tagName}${attrs}></${tagName}>`;
+          }
+          if (children.length === 1 && children[0].type === 'text') {
+            const escaped = children[0].content.replace(/&/g, '&amp;').replace(/</g, '&lt;').replace(/>/g, '&gt;');
+            return pad + `<${tagName}${attrs}>${escaped}</${tagName}>`;
+          }
+
+          const innerParts = [];
+          children.forEach(child => {
+            if (child.type === 'text') {
+              const escaped = child.content.replace(/&/g, '&amp;').replace(/</g, '&lt;').replace(/>/g, '&gt;');
+              innerParts.push(indentStr.repeat(depth + 1) + escaped);
+            } else {
+              const formatted = formatNode(child.node, depth + 1);
+              if (formatted) innerParts.push(formatted);
+            }
+          });
+
+          return pad + `<${tagName}${attrs}>\n` + innerParts.join('\n') + '\n' + pad + `</${tagName}>`;
+        }
+
+        let result = '';
+        const doctype = doc.doctype;
+        if (doctype) result += '<!DOCTYPE ' + doctype.name + '>\n';
+        result += formatNode(doc.documentElement, 0);
+        return result;
+      }
+
+      // ============ CSS ============
+      function formatCSS(raw) {
+        if (!raw.trim()) throw new Error('输入为空');
+
+        let css = raw.trim();
+        const tokens = [];
+        let i = 0;
+        const len = css.length;
+
+        while (i < len) {
+          const ch = css[i];
+
+          if (ch === '/' && css[i + 1] === '*') {
+            let start = i;
+            i += 2;
+            while (i < len && !(css[i] === '*' && css[i + 1] === '/')) i++;
+            if (i < len) i += 2;
+            tokens.push({ type: 'comment', value: css.slice(start, i) });
+            continue;
+          }
+
+          if (ch === '"' || ch === "'") {
+            const quote = ch;
+            let start = i;
+            i++;
+            while (i < len) {
+              if (css[i] === '\\') { i += 2; continue; }
+              if (css[i] === quote) { i++; break; }
+              i++;
+            }
+            tokens.push({ type: 'string', value: css.slice(start, i) });
+            continue;
+          }
+
+          if (/\s/.test(ch)) {
+            let start = i;
+            while (i < len && /\s/.test(css[i])) i++;
+            tokens.push({ type: 'space', value: css.slice(start, i) });
+            continue;
+          }
+
+          tokens.push({ type: 'char', value: ch });
+          i++;
+        }
+
+        const indentStr = getIndentStr();
+        let output = '';
+        let indentLevel = 0;
+        let i2 = 0;
+        const n = tokens.length;
+
+        function addIndent() {
+          output += indentStr.repeat(indentLevel);
+        }
+
+        while (i2 < n) {
+          const tok = tokens[i2];
+
+          if (tok.type === 'space') {
+            i2++;
+            continue;
+          }
+
+          if (tok.type === 'comment') {
+            if (output && !output.endsWith('\n')) output += '\n';
+            addIndent();
+            output += tok.value.trim() + '\n';
+            i2++;
+            continue;
+          }
+
+          if (tok.type === 'string') {
+            output += tok.value;
+            i2++;
+            continue;
+          }
+
+          const ch = tok.value;
+
+          if (ch === '{') {
+            output += ' {\n';
+            indentLevel++;
+            i2++;
+            while (i2 < n && tokens[i2].type === 'space') i2++;
+            continue;
+          }
+
+          if (ch === '}') {
+            if (output.endsWith('\n')) output = output.slice(0, -1);
+            if (indentLevel > 0) indentLevel--;
+            if (output && !output.endsWith('\n')) output += '\n';
+            addIndent();
+            output += '}\n';
+            i2++;
+            while (i2 < n && tokens[i2].type === 'space') i2++;
+            continue;
+          }
+
+          if (ch === ';') {
+            output += ';\n';
+            i2++;
+            while (i2 < n && tokens[i2].type === 'space') i2++;
+            continue;
+          }
+
+          if (ch === ',') {
+            output += ',\n';
+            i2++;
+            while (i2 < n && tokens[i2].type === 'space') i2++;
+            continue;
+          }
+
+          if (ch === ' ' || ch === '\t') {
+            if (output && !output.endsWith(' ') && !output.endsWith('\n') && !output.endsWith('{') && !output.endsWith(';')) {
+              output += ' ';
+            }
+          } else {
+            if (output && !output.endsWith(' ') && !output.endsWith('\n') && !output.endsWith('{') && !output.endsWith(':') && !output.endsWith('(') && !output.endsWith(')')) {
+              if (ch !== ':' && ch !== '(' && ch !== ')' && ch !== '>' && ch !== '+' && ch !== '~') {
+                const prev = output[output.length - 1];
+                if (/[a-zA-Z0-9\-_]/.test(prev) && /[a-zA-Z0-9\-_]/.test(ch)) {
+                  output += ' ';
+                }
+              }
+            }
+            output += ch;
+          }
+          i2++;
+        }
+
+        output = output.replace(/\n{3,}/g, '\n\n').trim();
+        return output;
+      }
+
+      // ============ SQL ============
+      function formatSQL(raw) {
+        if (!raw.trim()) throw new Error('输入为空');
+
+        const keywords = [
+          'SELECT', 'FROM', 'WHERE', 'AND', 'OR', 'NOT', 'IN', 'IS', 'NULL',
+          'LIKE', 'BETWEEN', 'JOIN', 'LEFT', 'RIGHT', 'INNER', 'OUTER', 'ON',
+          'GROUP', 'BY', 'HAVING', 'ORDER', 'ASC', 'DESC', 'LIMIT', 'OFFSET',
+          'INSERT', 'INTO', 'VALUES', 'UPDATE', 'SET', 'DELETE', 'CREATE',
+          'TABLE', 'ALTER', 'DROP', 'INDEX', 'VIEW', 'AS', 'DISTINCT',
+          'UNION', 'ALL', 'CASE', 'WHEN', 'THEN', 'ELSE', 'END', 'EXISTS',
+          'PRIMARY', 'KEY', 'FOREIGN', 'REFERENCES', 'DEFAULT', 'UNIQUE',
+          'CHECK', 'CASCADE', 'RESTRICT', 'TRUNCATE', 'WITH', 'RECURSIVE',
+          'OVER', 'PARTITION', 'ROW', 'ROWS', 'RANGE', 'PRECEDING', 'FOLLOWING',
+          'CURRENT', 'UNBOUNDED', 'EXCEPT', 'INTERSECT', 'MINUS', 'TOP',
+          'PERCENT', 'TIES', 'FETCH', 'NEXT', 'ONLY', 'LATERAL', 'CROSS',
+          'FULL', 'NATURAL', 'USING', 'IF', 'BEGIN', 'COMMIT', 'ROLLBACK',
+          'GRANT', 'REVOKE', 'DECLARE', 'CURSOR', 'FETCH', 'OPEN', 'CLOSE',
+          'DEALLOCATE', 'PROCEDURE', 'FUNCTION', 'TRIGGER', 'RETURNS',
+          'RETURN', 'WHILE', 'LOOP', 'FOR', 'EACH', 'RAISE', 'EXECUTE',
+          'PREPARE', 'EXPLAIN', 'ANALYZE', 'VACUUM', 'PRAGMA', 'ATTACH',
+          'DETACH', 'REINDEX', 'SAVEPOINT', 'RELEASE', 'RENAME', 'TO',
+        ];
+        const kwSet = new Set(keywords);
+
+        const tokens = [];
+        let i = 0;
+        const len = raw.length;
+        while (i < len) {
+          const ch = raw[i];
+
+          if (/\s/.test(ch)) {
+            let start = i;
+            while (i < len && /\s/.test(raw[i])) i++;
+            tokens.push({ type: 'space', value: raw.slice(start, i) });
+            continue;
+          }
+
+          if (ch === "'" || ch === '"') {
+            const quote = ch;
+            let start = i;
+            i++;
+            while (i < len) {
+              if (raw[i] === '\\') { i += 2; continue; }
+              if (raw[i] === quote) {
+                if (raw[i + 1] === quote) { i += 2; continue; }
+                i++;
+                break;
+              }
+              i++;
+            }
+            tokens.push({ type: 'string', value: raw.slice(start, i) });
+            continue;
+          }
+
+          if (ch === '`') {
+            let start = i;
+            i++;
+            while (i < len && raw[i] !== '`') i++;
+            if (i < len) i++;
+            tokens.push({ type: 'string', value: raw.slice(start, i) });
+            continue;
+          }
+
+          if (ch === '-' && raw[i + 1] === '-') {
+            let start = i;
+            i += 2;
+            while (i < len && raw[i] !== '\n') i++;
+            tokens.push({ type: 'comment', value: raw.slice(start, i) });
+            continue;
+          }
+
+          if (ch === '/' && raw[i + 1] === '*') {
+            let start = i;
+            i += 2;
+            while (i < len && !(raw[i] === '*' && raw[i + 1] === '/')) i++;
+            if (i < len) i += 2;
+            tokens.push({ type: 'comment', value: raw.slice(start, i) });
+            continue;
+          }
+
+          let start = i;
+          while (i < len) {
+            const c = raw[i];
+            if (/\s/.test(c) || c === "'" || c === '"' || c === '`' ||
+                (c === '-' && raw[i + 1] === '-') ||
+                (c === '/' && raw[i + 1] === '*') ||
+                c === '(' || c === ')' || c === ',' || c === ';' ||
+                c === '=' || c === '<' || c === '>' || c === '!' ||
+                c === '+' || c === '-' || c === '*' || c === '/' ||
+                c === '|' || c === '&' || c === '%' || c === '^' ||
+                c === '~' || c === '@' || c === '#' || c === '$' ||
+                c === '?' || c === ':' || c === '.' || c === '[' ||
+                c === ']' || c === '{' || c === '}') {
+              break;
+            }
+            i++;
+          }
+          if (i === start) {
+            tokens.push({ type: 'punct', value: raw[i] });
+            i++;
+          } else {
+            tokens.push({ type: 'word', value: raw.slice(start, i) });
+          }
+        }
+
+        function isKeyword(word) { return kwSet.has(word.toUpperCase()); }
+        function tokenToString(tok) {
+          if (tok.type === 'word' && isKeyword(tok.value)) return tok.value.toUpperCase();
+          return tok.value;
+        }
+
+        const indentStr = getIndentStr();
+        const resultLines = [];
+        let currentLine = '';
+        let indentLevel = 0;
+
+        const newlineKeywords = new Set([
+          'SELECT', 'FROM', 'WHERE', 'AND', 'OR', 'GROUP', 'HAVING',
+          'ORDER', 'LIMIT', 'OFFSET', 'INSERT', 'INTO', 'VALUES',
+          'UPDATE', 'SET', 'DELETE', 'CREATE', 'TABLE', 'ALTER',
+          'DROP', 'INDEX', 'VIEW', 'JOIN', 'LEFT', 'RIGHT', 'INNER',
+          'OUTER', 'ON', 'UNION', 'ALL', 'EXCEPT', 'INTERSECT',
+          'WITH', 'AS', 'CASE', 'WHEN', 'THEN', 'ELSE', 'END',
+          'BEGIN', 'COMMIT', 'ROLLBACK', 'GRANT', 'REVOKE',
+        ]);
+
+        let i2 = 0;
+        const n = tokens.length;
+
+        while (i2 < n) {
+          const tok = tokens[i2];
+
+          if (tok.type === 'space') {
+            if (currentLine && !currentLine.endsWith(' ') && !currentLine.endsWith('\n')) {
+              currentLine += ' ';
+            }
+            i2++;
+            continue;
+          }
+
+          if (tok.type === 'comment') {
+            if (currentLine.trim()) {
+              resultLines.push(indentStr.repeat(indentLevel) + currentLine.trim());
+              currentLine = '';
+            }
+            resultLines.push(indentStr.repeat(indentLevel) + tok.value.trim());
+            i2++;
+            continue;
+          }
+
+          const str = tokenToString(tok);
+          const upper = tok.type === 'word' ? tok.value.toUpperCase() : null;
+
+          let needNewline = false;
+          if (upper && newlineKeywords.has(upper) && currentLine.trim() !== '') {
+            if (upper === 'AND' || upper === 'OR') needNewline = true;
+            else if (upper === 'ON') needNewline = currentLine.trim().length > 60;
+            else needNewline = true;
+          }
+
+          if (tok.value === '(') {
+            currentLine += '(';
+            indentLevel++;
+            i2++;
+            while (i2 < n && tokens[i2].type === 'space') i2++;
+            continue;
+          }
+          if (tok.value === ')') {
+            indentLevel = Math.max(0, indentLevel - 1);
+            currentLine += ')';
+            i2++;
+            continue;
+          }
+          if (tok.value === ',') {
+            currentLine += ',';
+            i2++;
+            continue;
+          }
+          if (tok.value === ';') {
+            currentLine += ';';
+            if (currentLine.trim()) {
+              resultLines.push(indentStr.repeat(indentLevel) + currentLine.trim());
+              currentLine = '';
+            }
+            i2++;
+            continue;
+          }
+
+          if (needNewline) {
+            if (currentLine.trim()) {
+              resultLines.push(indentStr.repeat(indentLevel) + currentLine.trim());
+            }
+            currentLine = str;
+            i2++;
+            while (i2 < n && tokens[i2].type === 'space') i2++;
+            continue;
+          }
+
+          if (currentLine && !currentLine.endsWith(' ') && !currentLine.endsWith('\n') &&
+              !currentLine.endsWith('(') && !currentLine.endsWith(',') &&
+              tok.value !== ')' && tok.value !== ',' && tok.value !== ';' &&
+              tok.value !== '(' && tok.value !== '.') {
+            currentLine += ' ';
+          }
+          if (tok.value === '(' && currentLine.endsWith(' ')) {
+            currentLine = currentLine.slice(0, -1);
+          }
+          if (tok.value === '.') {
+            currentLine = currentLine.trimEnd() + '.';
+            i2++;
+            while (i2 < n && tokens[i2].type === 'space') i2++;
+            continue;
+          }
+
+          currentLine += str;
+          i2++;
+        }
+
+        if (currentLine.trim()) {
+          resultLines.push(indentStr.repeat(indentLevel) + currentLine.trim());
+        }
+
+        return resultLines.join('\n');
+      }
+
+      // ============ URL ============
+      function processURL(raw, action) {
+        if (!raw.trim()) throw new Error('输入为空');
+        if (action === 'encode') return encodeURIComponent(raw);
+        else {
+          try { return decodeURIComponent(raw); }
+          catch (e) { return raw.replace(/%([0-9A-Fa-f]{2})/g, (m, p1) => String.fromCharCode(parseInt(p1, 16))); }
+        }
+      }
+
+      // ============ Base64 ============
+      function processBase64(raw, action) {
+        if (!raw.trim()) throw new Error('输入为空');
+        if (action === 'encode') {
+          const bytes = new TextEncoder().encode(raw);
+          let binary = '';
+          bytes.forEach(b => binary += String.fromCharCode(b));
+          return btoa(binary);
+        } else {
+          try {
+            const binary = atob(raw.replace(/\s/g, ''));
+            const bytes = new Uint8Array(binary.length);
+            for (let i = 0; i < binary.length; i++) bytes[i] = binary.charCodeAt(i);
+            return new TextDecoder().decode(bytes);
+          } catch (e) {
+            throw new Error('Base64 解码失败：' + e.message);
+          }
+        }
+      }
+
+      // ============ 日志解析（增强版：同样展开嵌套 JSON）============
+      function extractJsonFragments(text) {
+        const fragments = [];
+        let i = 0;
+        const len = text.length;
+        while (i < len) {
+          if (text[i] === '{') {
+            let depth = 0, inString = false, escape = false;
+            let start = i, found = false;
+            for (let j = i; j < len; j++) {
+              const ch = text[j];
+              if (escape) { escape = false; continue; }
+              if (ch === '\\') { escape = true; continue; }
+              if (ch === '"') { inString = !inString; continue; }
+              if (!inString) {
+                if (ch === '{') depth++;
+                else if (ch === '}') {
+                  depth--;
+                  if (depth === 0) {
+                    const raw = text.slice(start, j + 1);
+                    try {
+                      const parsed = JSON.parse(raw);
+                      if (typeof parsed === 'object' && parsed !== null) {
+                        fragments.push({ raw, parsed, start, end: j + 1 });
+                      }
+                    } catch (e) { /* 非法 JSON */ }
+                    found = true;
+                    i = j + 1;
+                    break;
+                  }
+                }
+              }
+            }
+            if (!found) i++;
+          } else i++;
+        }
+        return fragments;
+      }
+
+      function formatLogWithJson(text, indent) {
+        const fragments = extractJsonFragments(text);
+        if (fragments.length === 0) return { result: text, count: 0 };
+        let result = text;
+        const sorted = [...fragments].sort((a, b) => b.start - a.start);
+        let formattedCount = 0;
+        for (const frag of sorted) {
+          let parsed = frag.parsed;
+          // 展开嵌套 JSON 字符串
+          if (expandNested.checked) {
+            parsed = expandNestedJson(parsed);
+          }
+          if (sortKeys.checked) parsed = sortObjectKeys(parsed);
+          const formatted = JSON.stringify(parsed, null, indent);
+          result = result.slice(0, frag.start) + formatted + result.slice(frag.end);
+          formattedCount++;
+        }
+        return { result, count: formattedCount };
+      }
+
+      // ============ 主处理逻辑 ============
+      function doProcess() {
+        hideError();
+        const raw = inputArea.value;
+        if (!raw.trim()) {
+          setStatus('请输入内容', 'error');
+          inputWrapper.classList.add('error');
+          outputArea.value = '';
+          outputMeta.textContent = '0 字符';
+          return;
+        }
+
+        try {
+          let result = '';
+          let statusMsg = '';
+
+          if (currentMode === 'json') {
+            result = formatJSON(raw);
+            statusMsg = expandNested.checked ? 'JSON 格式化成功（已展开嵌套）' : 'JSON 格式化成功';
+          } else if (currentMode === 'xml') {
+            result = formatXML(raw);
+            statusMsg = 'XML 格式化成功';
+          } else if (currentMode === 'html') {
+            result = formatHTML(raw);
+            statusMsg = 'HTML 格式化成功';
+          } else if (currentMode === 'css') {
+            result = formatCSS(raw);
+            statusMsg = 'CSS 格式化成功';
+          } else if (currentMode === 'sql') {
+            result = formatSQL(raw);
+            statusMsg = 'SQL 格式化成功';
+          } else if (currentMode === 'url') {
+            result = processURL(raw, currentAction);
+            statusMsg = currentAction === 'encode' ? 'URL 编码成功' : 'URL 解码成功';
+          } else if (currentMode === 'base64') {
+            result = processBase64(raw, currentAction);
+            statusMsg = currentAction === 'encode' ? 'Base64 编码成功' : 'Base64 解码成功';
+          } else if (currentMode === 'log') {
+            const { result: logResult, count } = formatLogWithJson(raw, getIndent());
+            if (count === 0) {
+              try {
+                result = formatJSON(raw);
+                statusMsg = '未检测到日志格式，但整体是合法 JSON，已直接格式化';
+              } catch (e) {
+                setStatus('未检测到可解析的 JSON 片段', 'error');
+                inputWrapper.classList.add('error');
+                outputArea.value = raw;
+                outputMeta.textContent = `${raw.length} 字符`;
+                return;
+              }
+            } else {
+              result = logResult;
+              statusMsg = `成功解析 ${count} 个 JSON 片段${expandNested.checked ? '（已展开嵌套）' : ''}`;
+            }
+          }
+
+          outputArea.value = result;
+          setStatus(statusMsg, 'success');
+          inputWrapper.classList.add('valid');
+          outputWrapper.classList.add('valid');
+          updateStats(raw, result);
+        } catch (e) {
+          outputArea.value = '';
+          setStatus('处理失败：' + e.message, 'error');
+          inputWrapper.classList.add('error');
+          outputWrapper.classList.add('error');
+          updateStats(raw, '');
+        }
+      }
+
+      function doCopy() {
+        const text = outputArea.value;
+        if (!text) { showToast('⚠️ 输出为空', 'error'); return; }
+        if (navigator.clipboard && navigator.clipboard.writeText) {
+          navigator.clipboard.writeText(text).then(() => showToast('📋 已复制到剪贴板', 'success'))
+            .catch(() => fallbackCopy(text));
+        } else fallbackCopy(text);
+      }
+
+      function fallbackCopy(text) {
+        const ta = document.createElement('textarea');
+        ta.value = text;
+        ta.style.position = 'fixed';
+        ta.style.opacity = '0';
+        document.body.appendChild(ta);
+        ta.select();
+        try { document.execCommand('copy'); showToast('📋 已复制到剪贴板', 'success'); }
+        catch (e) { showToast('❌ 复制失败', 'error'); }
+        document.body.removeChild(ta);
+      }
+
+      function doDownload() {
+        const text = outputArea.value;
+        if (!text) { showToast('⚠️ 输出为空', 'error'); return; }
+        const extMap = { json: 'json', xml: 'xml', html: 'html', css: 'css', sql: 'sql', url: 'txt', base64: 'txt', log: 'txt' };
+        const ext = extMap[currentMode] || 'txt';
+        const blob = new Blob([text], { type: 'text/plain;charset=utf-8' });
+        const url = URL.createObjectURL(blob);
+        const a = document.createElement('a');
+        a.href = url;
+        a.download = 'output_' + Date.now() + '.' + ext;
+        document.body.appendChild(a);
+        a.click();
+        document.body.removeChild(a);
+        URL.revokeObjectURL(url);
+        showToast('⬇️ 文件已下载', 'success');
+      }
+
+      function doClear() {
+        inputArea.value = '';
+        outputArea.value = '';
+        hideError();
+        setStatus('已清空', '');
+        updateStats('', '');
+        inputArea.focus();
+      }
+
+      function switchMode(mode) {
+        currentMode = mode;
+        modeBtns.forEach(btn => btn.classList.toggle('active', btn.dataset.mode === mode));
+
+        const hints = {
+          json: 'JSON 格式化：校验并美化 JSON。开启「展开嵌套 JSON 字符串」后，若字段值是合法 JSON 字符串（如 extendInfo），会自动解析并展开，实现多层嵌套的完整美化。',
+          xml: 'XML 格式化：使用 DOMParser 解析并美化标签结构，支持属性和 XML 声明。',
+          html: 'HTML 格式化：使用 DOMParser 解析并美化 HTML 标签，自动缩进，自闭合标签单独处理。',
+          css: 'CSS 格式化：对选择器、属性、括号进行排版缩进，保留注释和字符串。',
+          sql: 'SQL 格式化：关键词大写，主要子句换行缩进，保留字符串和注释。',
+          url: 'URL 编码/解码：使用 encodeURIComponent / decodeURIComponent，支持 Unicode。',
+          base64: 'Base64 编码/解码：支持中文等 Unicode 字符，自动处理换行。',
+          log: '日志解析：自动扫描日志中的平衡 JSON 片段并格式化，保留日志原始结构。同样支持展开嵌套 JSON 字符串。'
+        };
+        hintContent.textContent = hints[mode] || '';
+
+        sortKeysOption.style.display = (mode === 'json' || mode === 'log') ? 'flex' : 'none';
+        expandNestedOption.style.display = (mode === 'json' || mode === 'log') ? 'flex' : 'none';
+        actionRow.style.display = (mode === 'url' || mode === 'base64') ? 'flex' : 'none';
+
+        if (mode === 'url' || mode === 'base64') setAction('encode');
+
+        if (autoFormat.checked && inputArea.value.trim()) {
+          setTimeout(doProcess, 30);
+        }
+      }
+
+      function setAction(action) {
+        currentAction = action;
+        encodeBtn.classList.toggle('active', action === 'encode');
+        decodeBtn.classList.toggle('active', action === 'decode');
+        if (autoFormat.checked && inputArea.value.trim()) doProcess();
+      }
+
+      let autoTimer = null;
+      function scheduleAutoProcess() {
+        if (!autoFormat.checked) return;
+        if (autoTimer) clearTimeout(autoTimer);
+        autoTimer = setTimeout(() => {
+          const raw = inputArea.value;
+          if (raw.trim()) doProcess();
+          else {
+            hideError();
+            outputArea.value = '';
+            setStatus('等待输入...', '');
+            updateStats('', '');
+          }
+        }, 400);
+      }
+
+      function updateStats(inputText, outputText) {
+        const chars = inputText.length;
+        const lines = inputText ? inputText.split('\n').length : 0;
+        charCount.textContent = chars;
+        lineCount.textContent = lines;
+        inputMeta.textContent = `${chars} 字符`;
+        if (outputText !== undefined) outputMeta.textContent = `${outputText.length} 字符`;
+      }
+
+      function setStatus(message, type = '') {
+        const icons = { success: '✅', error: '❌', '': '💡' };
+        statusBar.querySelector('.status-icon').textContent = icons[type] || icons[''];
+        statusText.textContent = message;
+        statusText.className = 'status-text' + (type ? ' ' + type : '');
+      }
+
+      function hideError() {
+        inputWrapper.classList.remove('error', 'valid');
+        outputWrapper.classList.remove('error', 'valid');
+      }
+
+      function bindEvents() {
+        formatBtn.addEventListener('click', doProcess);
+        copyBtn.addEventListener('click', doCopy);
+        downloadBtn.addEventListener('click', doDownload);
+        clearBtn.addEventListener('click', doClear);
+
+        modeBtns.forEach(btn => {
+          btn.addEventListener('click', () => switchMode(btn.dataset.mode));
+        });
+
+        encodeBtn.addEventListener('click', () => setAction('encode'));
+        decodeBtn.addEventListener('click', () => setAction('decode'));
+
+        inputArea.addEventListener('input', () => {
+          updateStats(inputArea.value);
+          hideError();
+          scheduleAutoProcess();
+        });
+
+        autoFormat.addEventListener('change', () => {
+          if (autoFormat.checked && inputArea.value.trim()) doProcess();
+        });
+
+        indentSelect.addEventListener('change', () => {
+          if (autoFormat.checked && inputArea.value.trim()) doProcess();
+        });
+
+        sortKeys.addEventListener('change', () => {
+          if (autoFormat.checked && inputArea.value.trim()) doProcess();
+        });
+
+        expandNested.addEventListener('change', () => {
+          if (autoFormat.checked && inputArea.value.trim()) doProcess();
+        });
+
+        document.addEventListener('keydown', (e) => {
+          const ctrl = e.ctrlKey || e.metaKey;
+          if (ctrl && e.key === 'Enter') {
+            e.preventDefault();
+            doProcess();
+          } else if (ctrl && e.shiftKey && (e.key === 'K' || e.key === 'k')) {
+            e.preventDefault();
+            doClear();
+          } else if (ctrl && e.shiftKey && (e.key === 'E' || e.key === 'e')) {
+            if (currentMode === 'url' || currentMode === 'base64') {
+              e.preventDefault();
+              setAction('encode');
+            }
+          } else if (ctrl && e.shiftKey && (e.key === 'D' || e.key === 'd')) {
+            if (currentMode === 'url' || currentMode === 'base64') {
+              e.preventDefault();
+              setAction('decode');
+            }
+          }
+        });
+
+        inputArea.addEventListener('keydown', (e) => {
+          if (e.key === 'Tab') {
+            e.preventDefault();
+            const start = inputArea.selectionStart;
+            const end = inputArea.selectionEnd;
+            const value = inputArea.value;
+            inputArea.value = value.substring(0, start) + '  ' + value.substring(end);
+            inputArea.selectionStart = inputArea.selectionEnd = start + 2;
+            updateStats(inputArea.value);
+          }
+        });
+      }
+
+      function init() {
+        bindEvents();
+        updateStats('', '');
+        setStatus('等待输入...', '');
+        switchMode('json');
+      }
+
+      window.addEventListener('load', init);
+    })();
+  </script>
+</body>
+</html>

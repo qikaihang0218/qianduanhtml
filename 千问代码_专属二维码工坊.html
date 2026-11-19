@@ -1,0 +1,317 @@
+<!DOCTYPE html>
+<html lang="zh-CN">
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title>高级二维码生成器</title>
+    <script src="https://cdnjs.cloudflare.com/ajax/libs/qrcodejs/1.0.0/qrcode.min.js"></script>
+    <style>
+        /* --- 页面整体与动态背景 --- */
+        body {
+            font-family: 'PingFang SC', 'Microsoft YaHei', sans-serif;
+            display: flex;
+            flex-direction: column;
+            align-items: center;
+            justify-content: center;
+            min-height: 100vh;
+            margin: 0;
+            background: linear-gradient(-45deg, #ee7752, #e73c7e, #23a6d5, #23d5ab);
+            background-size: 400% 400%;
+            animation: gradientBG 15s ease infinite;
+            color: #333;
+        }
+
+        @keyframes gradientBG {
+            0% { background-position: 0% 50%; }
+            50% { background-position: 100% 50%; }
+            100% { background-position: 0% 50%; }
+        }
+
+        /* --- 毛玻璃卡片容器 --- */
+        .container {
+            background: rgba(255, 255, 255, 0.85);
+            backdrop-filter: blur(10px);
+            -webkit-backdrop-filter: blur(10px);
+            padding: 40px 30px;
+            border-radius: 20px;
+            box-shadow: 0 8px 32px 0 rgba(31, 38, 135, 0.2);
+            text-align: center;
+            width: 420px;
+            max-width: 90vw;
+            border: 1px solid rgba(255, 255, 255, 0.18);
+            transition: transform 0.3s ease;
+        }
+
+        .container:hover {
+            transform: translateY(-5px);
+        }
+
+        h2 { margin-top: 0; color: #2c3e50; font-weight: 600; margin-bottom: 25px; }
+
+        /* --- 表单元素美化 --- */
+        input[type="text"], input[type="number"] {
+            width: 100%; padding: 12px 15px; margin-bottom: 20px;
+            border: 2px solid #e0e0e0; border-radius: 10px; box-sizing: border-box;
+            font-size: 15px; outline: none; transition: border-color 0.3s;
+            background: rgba(255, 255, 255, 0.9);
+        }
+        input[type="text"]:focus, input[type="number"]:focus { border-color: #23a6d5; }
+
+        .settings { display: flex; gap: 15px; margin-bottom: 20px; flex-wrap: wrap; }
+        .color-group, .size-group { flex: 1; min-width: 100px; }
+        .color-group label, .size-group label {
+            display: block; font-size: 13px; color: #666;
+            margin-bottom: 8px; text-align: left; font-weight: 500;
+        }
+        input[type="color"] {
+            width: 100%; height: 42px; border: none; border-radius: 10px;
+            cursor: pointer; background: none;
+        }
+
+        /* --- 按钮组 --- */
+        .file-upload { margin-bottom: 25px; }
+        .file-upload label {
+            display: inline-block; padding: 10px 25px;
+            background: linear-gradient(to right, #6c757d, #495057);
+            color: white; border-radius: 25px; cursor: pointer;
+            font-size: 14px; transition: all 0.3s;
+            box-shadow: 0 4px 15px rgba(0,0,0,0.1);
+        }
+        .file-upload label:hover { transform: scale(1.05); box-shadow: 0 6px 20px rgba(0,0,0,0.15); }
+        .file-upload input { display: none; }
+
+        .btn-group { display: flex; gap: 12px; }
+        button {
+            flex: 1; padding: 12px; border: none; border-radius: 10px;
+            cursor: pointer; font-size: 15px; font-weight: 600;
+            transition: all 0.3s; color: white;
+        }
+        #generate-btn { background: linear-gradient(to right, #23a6d5, #23d5ab); box-shadow: 0 4px 15px rgba(35, 166, 213, 0.3); }
+        #download-btn { background: linear-gradient(to right, #11998e, #38ef7d); box-shadow: 0 4px 15px rgba(56, 239, 125, 0.3); display: none; }
+        #clear-btn { background: linear-gradient(to right, #ff416c, #ff4b2b); box-shadow: 0 4px 15px rgba(255, 75, 43, 0.3); }
+        button:hover { opacity: 0.9; transform: translateY(-2px); }
+
+        /* --- 预览区 --- */
+        #preview-area {
+            margin-top: 30px; padding: 20px;
+            background: white; border-radius: 15px;
+            box-shadow: inset 0 0 10px rgba(0,0,0,0.05);
+        }
+        #qrcode { display: flex; justify-content: center; align-items: center; position: relative; }
+        
+        /* 预览时的 Logo 样式（圆形带白边） */
+        #logo-preview {
+            position: absolute; top: 50%; left: 50%;
+            transform: translate(-50%, -50%);
+            max-width: 22%; max-height: 22%;
+            border-radius: 50%; box-shadow: 0 2px 8px rgba(0,0,0,0.15);
+            display: none; background: white; padding: 3px;
+        }
+    </style>
+</head>
+<body>
+
+    <div class="container">
+        <h2>✨ 专属二维码工坊</h2>
+        
+        <input type="text" id="text-input" placeholder="请输入网址或文字内容..." value="https://www.example.com">
+        
+        <div class="settings">
+            <div class="color-group">
+                <label>🎨 前景色</label>
+                <input type="color" id="color-dark" value="#000000">
+            </div>
+            <div class="color-group">
+                <label>🖼️ 背景色</label>
+                <input type="color" id="color-light" value="#ffffff">
+            </div>
+            <div class="size-group">
+                <label>📏 尺寸 (px)</label>
+                <input type="number" id="qr-size" value="300" min="100" max="800">
+            </div>
+        </div>
+
+        <div class="file-upload">
+            <label for="logo-upload">📤 点击上传 Logo 图标</label>
+            <input type="file" id="logo-upload" accept="image/*">
+        </div>
+        
+        <div class="btn-group">
+            <button id="generate-btn" onclick="generateQR()">立即生成</button>
+            <button id="download-btn" onclick="downloadQR()">💾 保存精美图片</button>
+            <button id="clear-btn" onclick="clearAll()">清空重置</button>
+        </div>
+        
+        <!-- 预览区域 -->
+        <div id="preview-area">
+            <div id="qrcode">
+                <img id="logo-preview" alt="Logo">
+            </div>
+        </div>
+    </div>
+
+    <script>
+        var qrcodeContainer = document.getElementById("qrcode");
+        var downloadBtn = document.getElementById("download-btn");
+        var logoPreview = document.getElementById("logo-preview");
+        var uploadedLogo = null;
+        var qrcodeObj = null; // 存储二维码实例
+
+        // 监听 Logo 上传
+        document.getElementById("logo-upload").addEventListener("change", function(e) {
+            var file = e.target.files[0];
+            if (file) {
+                var reader = new FileReader();
+                reader.onload = function(event) {
+                    uploadedLogo = event.target.result;
+                    logoPreview.src = uploadedLogo;
+                    logoPreview.style.display = "block";
+                    generateQR();
+                };
+                reader.readAsDataURL(file);
+            }
+        });
+
+        function generateQR() {
+            var text = document.getElementById("text-input").value;
+            var size = parseInt(document.getElementById("qr-size").value) || 300;
+            var colorDark = document.getElementById("color-dark").value;
+            var colorLight = document.getElementById("color-light").value;
+
+            if (!text) { alert("请先输入需要生成的内容哦！"); return; }
+
+            // 清空之前的二维码
+            qrcodeContainer.innerHTML = "";
+            qrcodeContainer.appendChild(logoPreview); // 重新把logo放回去
+
+            // 生成新的二维码
+            qrcodeObj = new QRCode(qrcodeContainer, {
+                text: text, width: size, height: size,
+                colorDark: colorDark, colorLight: colorLight,
+                correctLevel: QRCode.CorrectLevel.H
+            });
+
+            if (uploadedLogo) logoPreview.style.display = "block";
+
+            // 修复保存不可用：增加延迟确保 Canvas 渲染完成
+            setTimeout(() => {
+                downloadBtn.style.display = "block";
+            }, 300);
+        }
+
+        // 核心修复：合成一张带有精美边框、Logo和文字的高清图片
+        function downloadQR() {
+            var canvas = qrcodeContainer.querySelector("canvas");
+            if (!canvas) { alert("二维码还没生成好，请稍等~"); return; }
+
+            // 创建一个更大的画布来绘制精美边框
+            var finalCanvas = document.createElement('canvas');
+            var padding = 60; // 上下左右的留白
+            var footerHeight = 80; // 底部文字区域高度
+            finalCanvas.width = canvas.width + padding * 2;
+            finalCanvas.height = canvas.height + padding * 2 + footerHeight;
+            
+            var ctx = finalCanvas.getContext("2d");
+
+            // 1. 绘制白色圆角大背景
+            ctx.fillStyle = "#ffffff";
+            roundRect(ctx, 0, 0, finalCanvas.width, finalCanvas.height, 20, true);
+
+            // 2. 绘制原本的二维码
+            ctx.drawImage(canvas, padding, padding);
+
+            // 3. 如果有 Logo，重新在高清画布上绘制（带白底圆圈）
+            if (uploadedLogo) {
+                var img = new Image();
+                img.onload = function() {
+                    var logoSize = canvas.width * 0.22; 
+                    var x = finalCanvas.width / 2 - logoSize / 2;
+                    var y = padding + canvas.width / 2 - logoSize / 2;
+                    
+                    // 绘制 Logo 的白色圆形底座
+                    ctx.beginPath();
+                    ctx.arc(x + logoSize/2, y + logoSize/2, logoSize/2 + 5, 0, 2 * Math.PI);
+                    ctx.fillStyle = "#ffffff";
+                    ctx.fill();
+                    ctx.shadowColor = "rgba(0,0,0,0.2)";
+                    ctx.shadowBlur = 10;
+                    ctx.stroke();
+                    ctx.shadowBlur = 0; // 清除阴影
+
+                    // 绘制 Logo 图片
+                    ctx.drawImage(img, x, y, logoSize, logoSize);
+                    
+                    // 绘制底部装饰文字
+                    drawFooter(ctx, finalCanvas.width, finalCanvas.height, padding);
+                    
+                    triggerDownload(finalCanvas);
+                };
+                img.src = uploadedLogo;
+            } else {
+                // 没有 Logo 直接画文字并下载
+                drawFooter(ctx, finalCanvas.width, finalCanvas.height, padding);
+                triggerDownload(finalCanvas);
+            }
+        }
+
+        // 绘制底部引导文字和装饰线
+        function drawFooter(ctx, width, height, padding) {
+            var text = "长按识别二维码 · 获取更多信息";
+            ctx.fillStyle = "#999999";
+            ctx.font = "bold 24px 'Microsoft YaHei'";
+            ctx.textAlign = "center";
+            ctx.fillText(text, width / 2, height - padding + 30);
+
+            // 画一条精致的分割线
+            ctx.beginPath();
+            ctx.moveTo(width / 2 - 100, height - padding + 50);
+            ctx.lineTo(width / 2 + 100, height - padding + 50);
+            ctx.strokeStyle = "#eeeeee";
+            ctx.lineWidth = 2;
+            ctx.stroke();
+        }
+
+        // 辅助函数：绘制圆角矩形
+        function roundRect(ctx, x, y, width, height, radius, fill) {
+            ctx.beginPath();
+            ctx.moveTo(x + radius, y);
+            ctx.lineTo(x + width - radius, y);
+            ctx.quadraticCurveTo(x + width, y, x + width, y + radius);
+            ctx.lineTo(x + width, y + height - radius);
+            ctx.quadraticCurveTo(x + width, y + height, x + width - radius, y + height);
+            ctx.lineTo(x + radius, y + height);
+            ctx.quadraticCurveTo(x, y + height, x, y + height - radius);
+            ctx.lineTo(x, y + radius);
+            ctx.quadraticCurveTo(x, y, x + radius, y);
+            ctx.closePath();
+            if (fill) ctx.fill();
+        }
+
+        function triggerDownload(canvas) {
+            var imgUrl = canvas.toDataURL("image/png");
+            var link = document.createElement('a');
+            link.href = imgUrl;
+            link.download = '专属二维码_' + new Date().getTime() + '.png';
+            document.body.appendChild(link);
+            link.click();
+            document.body.removeChild(link);
+        }
+
+        function clearAll() {
+            document.getElementById("text-input").value = "";
+            document.getElementById("color-dark").value = "#000000";
+            document.getElementById("color-light").value = "#ffffff";
+            document.getElementById("qr-size").value = "300";
+            document.getElementById("logo-upload").value = "";
+            uploadedLogo = null;
+            logoPreview.style.display = "none";
+            qrcodeContainer.innerHTML = '<img id="logo-preview" alt="Logo">';
+            logoPreview = document.getElementById("logo-preview");
+            downloadBtn.style.display = "none";
+        }
+
+        window.onload = generateQR;
+    </script>
+
+</body>
+</html>
