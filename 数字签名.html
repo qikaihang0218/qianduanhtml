@@ -1,0 +1,481 @@
+<!DOCTYPE html>
+<html lang="zh-CN">
+<head>
+<meta charset="UTF-8">
+<meta name="viewport" content="width=device-width, initial-scale=1.0">
+<meta name="theme-color" content="#0b1023">
+<meta name="color-scheme" content="dark">
+<title>🔏 数字签名工坊 · 加密签名 + 手写签名</title>
+<style>
+:root{
+  --bg:#0b1023;--panel:rgba(18,25,50,.85);--panel2:#0e1530;--border:rgba(118,140,255,.16);
+  --borderhi:rgba(108,132,255,.4);--text:#eef2ff;--muted:#8a93b8;
+  --cyan:#4fe3ff;--violet:#a87cff;--pink:#f07de9;--green:#65efc5;--amber:#ffd36f;--red:#ff7a8a;
+  --font:'Segoe UI','PingFang SC','Microsoft YaHei',system-ui,sans-serif;--mono:'Cascadia Mono','Consolas',monospace;
+}
+*{box-sizing:border-box}
+html{min-height:100%;background:var(--bg)}
+body{margin:0;color:var(--text);font-family:var(--font);
+  background:radial-gradient(ellipse at 18% 0%,rgba(50,90,220,.16),transparent 34%),
+             radial-gradient(ellipse at 90% 45%,rgba(150,60,220,.13),transparent 33%),var(--bg);
+  min-height:100vh}
+.wrap{max-width:1120px;margin:auto;padding:0 20px 40px}
+.topbar{height:70px;border-bottom:1px solid var(--border);display:flex;align-items:center;gap:12px}
+.brand-mark{display:grid;place-items:center;width:38px;height:38px;border-radius:12px;font-size:20px;
+  background:linear-gradient(135deg,rgba(53,171,255,.22),rgba(163,106,255,.24));border:1px solid #4562b9}
+.brand b{display:block;font-size:13px;letter-spacing:.5px}
+.brand small{display:block;margin-top:2px;color:var(--muted);font-size:11px}
+.intro{text-align:center;padding:34px 0 26px}
+.eyebrow{font:10px var(--mono);letter-spacing:2.4px;color:#73a7ff}
+.intro h1{font-size:clamp(26px,3.4vw,42px);margin:10px 0 8px;font-weight:800;letter-spacing:-1px}
+.intro h1 span{background:linear-gradient(90deg,#6fe8ff,#a48dff 55%,#f07de9);color:transparent;background-clip:text}
+.intro p{margin:0;color:#99a3c2;font-size:13px;line-height:1.8}
+.tabs{display:flex;gap:8px;justify-content:center;margin-bottom:22px}
+.tab{padding:10px 22px;border-radius:11px;border:1px solid var(--border);background:var(--panel);
+  color:var(--muted);font-size:12px;cursor:pointer;transition:.16s;font-weight:600}
+.tab:hover{border-color:var(--borderhi);color:var(--text)}
+.tab.active{background:linear-gradient(105deg,#3f66f5,#a45df7);border-color:#8b72ff;color:#fff;box-shadow:0 5px 18px #8158ff2e}
+.pane{display:none}
+.pane.active{display:block;animation:fade .25s ease}
+@keyframes fade{from{opacity:0;transform:translateY(6px)}to{opacity:1;transform:none}}
+.card{background:var(--panel);border:1px solid var(--border);border-radius:16px;padding:22px;margin-bottom:18px}
+.card h2{margin:0 0 4px;font-size:16px}
+.card .desc{margin:0 0 16px;color:var(--muted);font-size:12px;line-height:1.7}
+.row{display:flex;gap:14px;flex-wrap:wrap}
+.col{flex:1;min-width:300px}
+button{font-family:var(--font);cursor:pointer;border-radius:9px;font-size:12px;transition:.16s;border:1px solid transparent}
+.primary{background:linear-gradient(105deg,#4068f5,#a45df7);color:#fff;border:1px solid #8b72ff;padding:11px 18px;box-shadow:0 5px 18px #8158ff2e}
+.primary:hover{filter:brightness(1.12)}
+.secondary{background:#141d3c;border:1px solid #2a395f;color:#bcc8ec;padding:10px 16px}
+.secondary:hover{border-color:#6073c8;background:#1a254d;color:#fff}
+.ghost{background:transparent;border:1px solid var(--border);color:var(--muted);padding:10px 16px}
+.ghost:hover{color:#fff;border-color:var(--borderhi)}
+textarea,input[type=text],select{width:100%;background:#0a0f24;border:1px solid #293658;border-radius:9px;
+  color:#e9efff;padding:11px 13px;font:11px var(--mono);outline:none;resize:vertical}
+textarea:focus,input:focus,select:focus{border-color:#6e7cff}
+label{display:block;font-size:10px;color:#8592b5;margin:12px 0 6px}
+.pill{display:inline-block;font:10px var(--mono);padding:4px 8px;border-radius:6px;border:1px solid #344c9d;color:#6e8dff;margin-bottom:10px}
+.mono-out{width:100%;background:#080d1e;border:1px solid #1e2950;border-radius:9px;padding:12px;
+  color:#a9f4d4;font:11px var(--mono);word-break:break-all;min-height:52px;white-space:pre-wrap;max-height:160px;overflow:auto}
+.mono-out.sig{color:#ffd9a3}
+.btnrow{display:flex;gap:9px;flex-wrap:wrap;margin-top:8px}
+.pem{display:grid;grid-template-columns:1fr 1fr;gap:12px}
+.pem textarea{height:170px;font-size:10px}
+canvas#sigCanvas{width:100%;height:260px;display:block;background:#fff;border:1px dashed #8b96c4;
+  border-radius:11px;cursor:crosshair;touch-action:none}
+.status{font:11px var(--mono);padding:10px 12px;border-radius:9px;margin-top:10px;display:none}
+.status.ok{display:block;background:#0e2b22;border:1px solid #2f7a5a;color:#9cf0cc}
+.status.err{display:block;background:#2b1220;border:1px solid #8a3a55;color:#ffb3c0}
+.status.info{display:block;background:#101a3d;border:1px solid #334a9d;color:#aebfff}
+.note{font-size:10px;color:#697797;line-height:1.7;margin-top:12px}
+.sig-ops{display:flex;align-items:flex-end;gap:10px;flex-wrap:wrap;margin-top:6px}
+.sig-ops button{white-space:nowrap}
+.tools{display:flex;gap:10px;align-items:center;flex-wrap:wrap;margin-top:12px}
+.tools label{margin:0}
+.tools input[type=color]{width:34px;height:34px;border:none;border-radius:8px;cursor:pointer;background:transparent}
+.tools input[type=range]{width:120px}
+.saved-keys{display:grid;gap:8px;margin-top:8px}
+.use-key{background:#101a38;border:1px solid #273a6e;color:#cdd9ff;padding:8px 10px;border-radius:8px;text-align:left;font-size:11px}
+.use-key:hover{border-color:#687cff}
+.small{font-size:10px;color:#7d89ad}
+footer{text-align:center;padding:24px 0 0;font:9px var(--mono);letter-spacing:1.4px;color:#586487}
+</style>
+</head>
+<body>
+<div class="wrap">
+  <div class="topbar">
+    <div class="brand-mark">🔏</div>
+    <div class="brand"><b>数字签名工坊</b><small>Digital Signature Studio · 纯本地运行</small></div>
+  </div>
+
+  <div class="intro">
+    <div class="eyebrow">LOCAL · PRIVATE · OFFLINE</div>
+    <h1>加密签名 <span>+</span> 手写签名</h1>
+    <p>密码学数字签名验证数据真实性与完整性；手写画板模拟纸面签署。全部在浏览器本地完成，数据不上传。</p>
+  </div>
+
+  <div class="tabs">
+    <button class="tab active" data-tab="crypto">🔐 加密数字签名</button>
+    <button class="tab" data-tab="hand">🖊️ 手写签名</button>
+  </div>
+
+  <!-- ============ 加密签名单 ============ -->
+  <div class="pane active" id="pane-crypto">
+    <div class="card">
+      <h2>生成密钥对</h2>
+      <p class="desc">RSA-2048 / SHA-256 非对称密钥。私钥用于签名（必须保密），公钥用于验证签名（可公开分享）。</p>
+      <div class="btnrow">
+        <button class="primary" id="genKey">生成新密钥对</button>
+        <button class="secondary" id="copyPub">复制公钥</button>
+        <button class="secondary" id="copyPriv">复制私钥</button>
+        <button class="secondary" id="downloadLib">⬇️ 下载工具类</button>
+      </div>
+      <p class="note">“下载工具类”会导出独立的 <b>DigitalSignature.js</b> —— 一个可直接复用的 RSA 签名/验签类，支持浏览器与 Node.js。</p>
+      <div class="pem" style="margin-top:14px">
+        <div>
+          <label>公钥（分享给验证方，可公开）</label>
+          <textarea id="pubPem" placeholder="点击“生成新密钥对”"></textarea>
+        </div>
+        <div>
+          <label>私钥（自行保管，请勿外传）</label>
+          <textarea id="privPem" placeholder="点击“生成新密钥对”"></textarea>
+        </div>
+      </div>
+      <div class="saved-keys"></div>
+      <p class="note">提示：Web 加密 API 需要安全上下文。若页面以 <b>file://</b> 直接打开时该区不可用，请使用 localhost 或 HTTPS（参考文末说明）。</p>
+    </div>
+
+    <div class="card">
+      <h2>签名内容</h2>
+      <p class="desc">使用私钥对下方文本生成签名。任何对文本的修改都会使签名验证失败。</p>
+      <label>待签名 / 待验证的文本</label>
+      <textarea id="signText" rows="5" placeholder="输入要签名或验证的内容……"></textarea>
+      <div class="btnrow">
+        <button class="primary" id="doSign">⚡ 生成签名</button>
+        <button class="secondary" id="clearSign">清空签名</button>
+      </div>
+      <label>签名结果（Base64）</label>
+      <div class="mono-out sig" id="sigOut">—</div>
+      <button class="ghost" id="copySig" style="margin-top:10px">复制签名</button>
+      <div id="sigStatus"></div>
+    </div>
+
+    <div class="card">
+      <h2>验证签名</h2>
+      <p class="desc">使用公钥 + 原始文本验证签名是否有效且文本未被篡改。</p>
+      <label>用于验证的公钥（粘贴 PEM）</label>
+      <textarea id="verifyPub" rows="4" placeholder="粘贴验证方的公钥……"></textarea>
+      <label>待验证的签名（粘贴 Base64）</label>
+      <textarea id="verifySig" rows="4" placeholder="粘贴签名……"></textarea>
+      <div class="btnrow">
+        <button class="primary" id="doVerify">🛡️ 验证签名</button>
+      </div>
+      <div id="verifyStatus"></div>
+    </div>
+  </div>
+
+  <!-- ============ 手写签名单 ============ -->
+  <div class="pane" id="pane-hand">
+    <div class="card">
+      <h2>手写签名画板</h2>
+      <p class="desc">使用鼠标或触控笔在下方画板上书写签名，可调节笔迹颜色与粗细，完成后导出为图片。</p>
+      <canvas id="sigCanvas"></canvas>
+      <div class="tools">
+        <label>颜色</label>
+        <input type="color" id="penColor" value="#1a2b6d">
+        <label>粗细</label>
+        <input type="range" id="penWidth" min="1" max="20" value="3">
+        <button class="secondary" id="clearCanvas">清空</button>
+        <button class="primary" id="saveCanvas">💾 导出 PNG</button>
+        <button class="secondary" id="saveJpg">导出 JPG</button>
+        <button class="secondary" id="cropCanvas">裁剪空白导出</button>
+      </div>
+      <div id="handStatus"></div>
+      <p class="note">导出为透明背景的 PNG 时，可叠加到合同、PDF 或图片上使用。JPG 为白底。</p>
+    </div>
+  </div>
+
+  <footer>🔏 数字签名工坊 · 所有操作均在本地完成 · 私钥永不上传</footer>
+</div>
+
+<script type="text/plain" id="libSource">
+/**
+ * DigitalSignature.js
+ * 基于 Web Crypto API 的 RSASSA-PKCS1-v1_5 / SHA-256 数字签名工具类。
+ * 兼容浏览器（需安全上下文 localhost/HTTPS）与 Node.js（17+ 提供 globalThis.crypto）。
+ * 纯本地运算，私钥只在浏览器内存中使用，永不上传。
+ *
+ * ── 浏览器中使用 ─────────────────────────────────────────────
+ *   用 script 标签引入 DigitalSignature.js 后：
+ *   (async () => {
+ *     const ds  = new DigitalSignature();
+ *     const { publicKeyPem, privateKeyPem } = await ds.generateKeyPair(); // 生成密钥对
+ *     const signature = await ds.sign(privateKeyPem, '要签名的内容');       // 私钥签名 -> Base64
+ *     const valid     = await ds.verify(publicKeyPem, signature, '要签名的内容'); // 公钥验签
+ *     console.log(valid === true); // true
+ *   })();
+ *
+ * ── Node.js 中使用 ──────────────────────────────────────────
+ *   const { DigitalSignature } = require('./DigitalSignature.js'); // 或 import
+ *   （同上用法）
+ */
+(function (root, factory) {
+  const cls = factory();
+  if (typeof module === 'object' && module && typeof module.exports === 'object') {
+    module.exports = cls;
+  } else if (typeof define === 'function' && define.amd) {
+    define([], () => cls);
+  } else {
+    root.DigitalSignature = cls;
+  }
+})(typeof self !== 'undefined' ? self : this, function () {
+  'use strict';
+
+  class DigitalSignature {
+    static DEFAULT_ALGO = {
+      name: 'RSASSA-PKCS1-v1_5',
+      modulusLength: 2048,
+      publicExponent: new Uint8Array([1, 0, 1]),
+      hash: 'SHA-256',
+    };
+
+    constructor(options = {}) {
+      if (!globalThis.crypto || !globalThis.crypto.subtle) {
+        throw new Error('当前环境不支持 Web Crypto API。浏览器请通过 localhost 或 HTTPS 打开；Node.js 需要 17+。');
+      }
+      this.algo = Object.assign({}, DigitalSignature.DEFAULT_ALGO, options.algo || {});
+    }
+
+    async generateKeyPair() {
+      const keyPair = await globalThis.crypto.subtle.generateKey(this.algo, true, ['sign', 'verify']);
+      const publicKeyPem = await this._export('spki', keyPair.publicKey, 'PUBLIC KEY');
+      const privateKeyPem = await this._export('pkcs8', keyPair.privateKey, 'PRIVATE KEY');
+      return { publicKeyPem, privateKeyPem };
+    }
+
+    async importPublicKey(pem, usages = ['verify']) {
+      return globalThis.crypto.subtle.importKey('spki', this.pemToDer(pem), this.algo, true, usages);
+    }
+
+    async importPrivateKey(pem, usages = ['sign']) {
+      return globalThis.crypto.subtle.importKey('pkcs8', this.pemToDer(pem), this.algo, true, usages);
+    }
+
+    async sign(key, text) {
+      const cryptoKey = typeof key === 'string' ? await this.importPrivateKey(key) : key;
+      const sig = await globalThis.crypto.subtle.sign(this.algo.name, cryptoKey, new TextEncoder().encode(text));
+      return this._bufToB64(sig);
+    }
+
+    async verify(key, signatureBase64, text) {
+      const cryptoKey = typeof key === 'string' ? await this.importPublicKey(key) : key;
+      const ok = await globalThis.crypto.subtle.verify(this.algo.name, cryptoKey, this.b64ToBuf(signatureBase64), new TextEncoder().encode(text));
+      return ok;
+    }
+
+    async _export(format, cryptoKey, label) {
+      return this.derToPem(await globalThis.crypto.subtle.exportKey(format, cryptoKey), label);
+    }
+
+    derToPem(derBuffer, label) {
+      const b64 = this._bufToB64(derBuffer).match(/.{1,64}/g).join('\n');
+      return `-----BEGIN ${label}-----\n${b64}\n-----END ${label}-----`;
+    }
+
+    pemToDer(pem) {
+      const b64 = pem.replace(/-----BEGIN [^-]+-----/, '').replace(/-----END [^-]+-----/, '').replace(/\s/g, '');
+      return this.b64ToBuf(b64);
+    }
+
+    _bufToB64(buf) {
+      const bytes = new Uint8Array(buf);
+      let bin = '';
+      const CH = 0x8000;
+      for (let i = 0; i < bytes.length; i += CH) bin += String.fromCharCode.apply(null, bytes.subarray(i, i + CH));
+      return atob ? btoa(bin) : Buffer.from(bin, 'binary').toString('base64');
+    }
+
+    b64ToBuf(b64) {
+      const bin = atob ? atob(b64.replace(/\s/g, '')) : Buffer.from(b64.replace(/\s/g, ''), 'base64').toString('binary');
+      const bytes = new Uint8Array(bin.length);
+      for (let i = 0; i < bin.length; i++) bytes[i] = bin.charCodeAt(i);
+      return bytes.buffer;
+    }
+  }
+
+  return DigitalSignature;
+});
+</script>
+<script>
+(function(){
+"use strict";
+const $=id=>document.getElementById(id);
+const R=id=>$(id).value; // 读取输入值
+function setStatus(el,msg,type){
+  el.className='status '+(type||'info'); el.textContent=(type==='err'?'❌ ':(type==='ok'?'✅ ':'ℹ️ '))+msg;
+}
+
+/* ---------- Tab 切换 ---------- */
+const tabs=document.querySelectorAll('.tab');
+tabs.forEach(t=>t.addEventListener('click',()=>{
+  tabs.forEach(x=>x.classList.remove('active'));
+  t.classList.add('active');
+  document.querySelectorAll('.pane').forEach(p=>p.classList.remove('active'));
+  $('pane-'+t.dataset.tab).classList.add('active');
+  if(t.dataset.tab==='hand') resizeCanvas();
+}));
+
+/* ---------- 加载工具类（唯一源码，运行时复用 + 用于下载） ---------- */
+Function(document.getElementById('libSource').textContent)();
+const DS = new window.DigitalSignature();
+
+/* ---------- 密钥管理 ---------- */
+let savedKey = null;
+const savedKeysEl = document.querySelector('.saved-keys');
+
+async function genKeys(){
+  const kp = await DS.generateKeyPair();
+  savedKey = kp.privateKeyPem;               // 始终存私钥 PEM 字符串
+  $('pubPem').value = kp.publicKeyPem;
+  $('privPem').value = kp.privateKeyPem;
+  $('verifyPub').value = kp.publicKeyPem;
+  renderSavedKeys([kp.publicKeyPem, kp.privateKeyPem]);
+  return kp.publicKeyPem;
+}
+
+function renderSavedKeys(arr){
+  if(!arr || !arr.length){ savedKeysEl.innerHTML=''; return; }
+  const pubs=[], privs=[];
+  (Array.isArray(arr)?arr:[arr]).forEach(p => p.includes('PRIVATE KEY') ? privs.push(p) : pubs.push(p));
+  const html = pubs.map((p,i) => {
+    const priv = privs[i] || null;
+    return `<div class="use-key"><b>密钥对 ${i+1}</b><br><span class="small">
+      公钥 ${p.split('\n').slice(1,-1).join('').slice(0,24)}…
+    </span><div class="btnrow" style="margin-top:8px">
+      <button class="secondary load-pub" data-pem="${encodeURIComponent(p)}">载入公钥验证</button>
+      ${priv?`<button class="secondary load-key" data-pub="${encodeURIComponent(p)}" data-priv="${encodeURIComponent(priv)}">载入签名</button>`:''}
+    </div></div>`;
+  }).join('');
+  savedKeysEl.innerHTML = html;
+  savedKeysEl.querySelectorAll('.load-pub').forEach(b => b.addEventListener('click', () => {
+    $('verifyPub').value = decodeURIComponent(b.dataset.pem);
+    setStatus($('verifyStatus'),'已载入公钥，可粘贴签名后验证','info');
+  }));
+  savedKeysEl.querySelectorAll('.load-key').forEach(b => b.addEventListener('click', async () => {
+    try{
+      savedKey = await DS.importPrivateKey(decodeURIComponent(b.dataset.priv));
+      $('verifyPub').value = decodeURIComponent(b.dataset.pub);
+      setStatus($('sigStatus'),'已载入私钥，可对文本生成签名','ok');
+    }catch(e){ setStatus($('sigStatus'),'载入私钥失败：'+e.message,'err'); }
+  }));
+}
+
+/* ---------- 操作绑定 ---------- */
+$('genKey').addEventListener('click',async()=>{
+  if(!crypto||!crypto.subtle){ setStatus($('sigStatus'),'浏览器不支持 Web Crypto，请使用 HTTPS 或 localhost 打开','err'); return; }
+  $('genKey').textContent='生成中…'; $('genKey').disabled=true;
+  try{
+    const pub=await genKeys();
+    setStatus($('sigStatus'),'密钥对已生成。私钥请自行妥善保管。','ok');
+  }catch(e){ setStatus($('sigStatus'),'生成失败：'+e.message,'err'); }
+  finally{ $('genKey').textContent='生成新密钥对'; $('genKey').disabled=false; }
+});
+
+$('copyPub').addEventListener('click',async()=>{ await copy($('pubPem').value,'公钥已复制'); });
+$('copyPriv').addEventListener('click',async()=>{ await copy($('privPem').value,'私钥已复制'); });
+$('copySig').addEventListener('click',async()=>{ await copy($('sigOut').textContent==='—'?'':$('sigOut').textContent,'签名已复制'); });
+
+/* 下载可复用的工具类 DigitalSignature.js */
+$('downloadLib').addEventListener('click',()=>{
+  const code = $('libSource').textContent.trim() + '\n';
+  const blob = new Blob([code], { type: 'text/javascript;charset=utf-8' });
+  const url = URL.createObjectURL(blob);
+  const a = document.createElement('a');
+  a.href = url; a.download = 'DigitalSignature.js'; a.click();
+  setTimeout(()=>URL.revokeObjectURL(url), 500);
+  setStatus($('sigStatus'),'DigitalSignature.js 已下载，可直接在其它项目复用（支持浏览器 / Node.js）。','ok');
+});
+
+async function copy(text,msg){
+  try{ await navigator.clipboard.writeText(text); }
+  catch(e){ const t=document.createElement('textarea'); t.value=text; document.body.appendChild(t); t.select(); document.execCommand('copy'); t.remove(); }
+  setStatus($('sigStatus'),msg,'ok');
+}
+
+$('doSign').addEventListener('click',async()=>{
+  const text=$('signText').value;
+  if(!text){ setStatus($('sigStatus'),'请先输入要签名的内容','err'); return; }
+  let key=savedKey;
+  let usedName='';
+  if(!key){
+    const pem=$('privPem').value;
+    if(pem.includes('PRIVATE KEY')){
+      try{ key=await DS.importPrivateKey(pem); usedName='私钥'; }
+      catch(e){ setStatus($('sigStatus'),`解析私钥失败：${e.message}`,'err'); return; }
+    }else{
+      setStatus($('sigStatus'),'尚未生成或被载入私钥','err'); return;
+    }
+  }
+  try{
+    $('sigOut').textContent=await DS.sign(key,text);
+    setStatus($('sigStatus'),`签名已生成${usedName?'（使用已导入'+usedName+'）':''}。`,'ok');
+  }catch(e){ setStatus($('sigStatus'),'签名失败：'+e.message,'err'); }
+});
+
+$('clearSign').addEventListener('click',()=>{ $('sigOut').textContent='—'; $('sigStatus').className='status'; });
+
+$('doVerify').addEventListener('click',async()=>{
+  const text=$('signText').value;
+  const pub=$('verifyPub').value;
+  const sig=$('verifySig').value;
+  if(!text){ setStatus($('verifyStatus'),'请先输入待验证的原始文本','err'); return; }
+  if(!pub.includes('PUBLIC KEY')){ setStatus($('verifyStatus'),'请粘贴有效的公钥（-----BEGIN PUBLIC KEY-----）','err'); return; }
+  if(!sig){ setStatus($('verifyStatus'),'请粘贴要验证的签名','err'); return; }
+  try{
+    const ok=await DS.verify(pub,sig,text);
+    setStatus($('verifyStatus'),ok?'签名有效 ✅：文本未被篡改，且由对应私钥签名。':'签名无效 ❌：文本被修改，或公钥/签名不匹配。',ok?'ok':'err');
+  }catch(e){ setStatus($('verifyStatus'),'验证失败：'+e.message,'err'); }
+});
+
+/* ---------- 手写签名 ---------- */
+const canvas=$('sigCanvas');
+const ctx=canvas.getContext('2d');
+let drawing=false,lastX=0,lastY=0;
+function resizeCanvas(){
+  const r=canvas.getBoundingClientRect();
+  const dpr=window.devicePixelRatio||1;
+  canvas.width=r.width*dpr; canvas.height=r.height*dpr;
+  ctx.scale(dpr,dpr);
+  clearCanvas(); // resize 会清空 canvas，重新铺白底
+}
+window.addEventListener('resize',resizeCanvas);
+canvas.addEventListener('pointerdown',e=>{ drawing=true; const p=pos(e); lastX=p.x; lastY=p.y; canvas.setPointerCapture(e.pointerId); drawDot(p.x,p.y); });
+canvas.addEventListener('pointermove',e=>{ if(!drawing)return; const p=pos(e); line(lastX,lastY,p.x,p.y); lastX=p.x; lastY=p.y; });
+canvas.addEventListener('pointerup',()=>drawing=false);
+canvas.addEventListener('pointercancel',()=>drawing=false);
+function pos(e){ const r=canvas.getBoundingClientRect(); return {x:e.clientX-r.left, y:e.clientY-r.top}; }
+function line(x1,y1,x2,y2){
+  const c=R('penColor');
+  ctx.strokeStyle=c; ctx.lineWidth=+R('penWidth'); ctx.lineCap='round'; ctx.lineJoin='round';
+  ctx.beginPath(); ctx.moveTo(x1,y1); ctx.lineTo(x2,y2); ctx.stroke();
+}
+function drawDot(x,y){
+  const c=R('penColor');
+  ctx.strokeStyle=c; ctx.lineWidth=+R('penWidth');
+  ctx.beginPath(); ctx.arc(x,y,ctx.lineWidth/2,0,Math.PI*2); ctx.fillStyle=c; ctx.fill();
+}
+function clearCanvas(){ const r=canvas.getBoundingClientRect(); ctx.fillStyle='#fff'; ctx.fillRect(0,0,r.width,r.height); }
+$('clearCanvas').addEventListener('click',()=>{ clearCanvas(); $('handStatus').className='status'; });
+$('saveCanvas').addEventListener('click',()=>exportImg('png',false));
+$('saveJpg').addEventListener('click',()=>exportImg('jpeg',true));
+$('cropCanvas').addEventListener('click',()=>exportImg('png',true,true));
+function exportImg(type,whiteBg,crop){
+  if(canvas.width===0) resizeCanvas(); // 若画板尚未初始化则先初始化
+  let w=canvas.width,h=canvas.height;
+  let sx=0,sy=0,cw=w,ch=h;
+  // 计算内容边界用于裁剪
+  const imgData=ctx.getImageData(0,0,w,h),d=imgData.data;
+  if(crop){
+    let minX=w,minY=h,maxX=0,maxY=0,has=false;
+    for(let y=0;y<h;y++)for(let x=0;x<w;x++){
+      const i=(y*w+x)*4,a=d[i+3];
+      if(a>10){ has=true; if(x<minX)minX=x; if(x>maxX)maxX=x; if(y<minY)minY=y; if(y>maxY)maxY=y; }
+    }
+    if(has){ const pad=Math.max(8,w*0.005); sx=Math.max(0,minX-pad); sy=Math.max(0,minY-pad); cw=Math.min(w,maxX+pad)-sx; ch=Math.min(h,maxY+pad)-sy; }
+  }
+  const out=document.createElement('canvas'); out.width=cw; out.height=ch;
+  const octx=out.getContext('2d');
+  if(whiteBg||type==='jpeg'){ octx.fillStyle='#fff'; octx.fillRect(0,0,cw,ch); }
+  octx.drawImage(canvas,sx,sy,cw,ch,0,0,cw,ch);
+  const mime=type==='png'?'image/png':'image/jpeg';
+  const url=out.toDataURL(mime,0.95);
+  const a=document.createElement('a'); a.href=url; a.download='我的签名.'+type; a.click();
+  setStatus($('handStatus'),`已导出 ${cw}x${ch} ${type.toUpperCase()} 签名图片`,'ok');
+}
+
+/* 首次进入时初始化画板 */
+window.addEventListener('load',()=>{ setTimeout(resizeCanvas,50); });
+})();
+</script>
+</body>
+</html>
