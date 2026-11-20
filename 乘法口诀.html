@@ -1,0 +1,624 @@
+<!DOCTYPE html>
+<html lang="zh-CN">
+<head>
+<meta charset="UTF-8">
+<meta name="viewport" content="width=device-width,initial-scale=1,viewport-fit=cover">
+<title>大九九乘法口诀 · 1×1 至 19×19</title>
+<style>
+  *{box-sizing:border-box;-webkit-tap-highlight-color:transparent}
+  :root{
+    --fs:20px;
+    --paper:#f5eee2;
+    --ink:#241c14;
+    --ink-soft:#6b5a45;
+    --accent:#8d2c1f;
+    --gold:#a8803f;
+    --line:rgba(141,44,31,.16);
+    --glass:rgba(255,255,255,.62);
+  }
+  body.dark{
+    --paper:#14110e;
+    --ink:#e9ddc9;
+    --ink-soft:#9d8d76;
+    --accent:#d98b5f;
+    --gold:#c9a86a;
+    --line:rgba(217,139,95,.18);
+    --glass:rgba(38,32,26,.66);
+  }
+  html,body{height:100%}
+  body{
+    margin:0;
+    font-family:"Songti SC","STSong","SimSun","Noto Serif SC",serif;
+    color:var(--ink);
+    background:var(--paper);
+    background-image:
+      radial-gradient(circle at 18% 12%, rgba(168,128,63,.10), transparent 46%),
+      radial-gradient(circle at 82% 78%, rgba(141,44,31,.09), transparent 52%);
+    transition:background-color .5s,color .5s;
+    overflow:hidden;
+  }
+  body.vertical #stage{overflow-x:auto;overflow-y:hidden}
+  body:not(.vertical) #stage{overflow-y:auto;overflow-x:hidden}
+
+  .bar{
+    position:relative;z-index:20;
+    display:flex;align-items:center;gap:8px;flex-wrap:wrap;
+    padding:10px 16px;
+    background:var(--glass);
+    backdrop-filter:blur(16px) saturate(1.4);
+    -webkit-backdrop-filter:blur(16px) saturate(1.4);
+    border-bottom:1px solid var(--line);
+  }
+  .brand{display:flex;align-items:baseline;gap:10px;margin-right:auto;min-width:0}
+  .brand b{font-size:17px;letter-spacing:2px;font-weight:600;white-space:nowrap}
+  .brand span{font-size:11px;color:var(--ink-soft);letter-spacing:1px;white-space:nowrap}
+  .btn{
+    font-family:inherit;font-size:13px;color:var(--ink);
+    background:transparent;border:1px solid var(--line);border-radius:999px;
+    padding:6px 13px;cursor:pointer;transition:.22s;white-space:nowrap;
+  }
+  .btn:hover{border-color:var(--accent);color:var(--accent);transform:translateY(-1px)}
+  .btn.on{background:var(--accent);border-color:var(--accent);color:var(--paper)}
+  .group{display:flex;align-items:center;gap:6px;padding:3px 8px;border:1px solid var(--line);border-radius:999px}
+  .group label{font-size:11px;color:var(--ink-soft);letter-spacing:1px}
+  input[type=range]{
+    -webkit-appearance:none;appearance:none;height:3px;width:78px;
+    background:var(--line);border-radius:3px;outline:none;cursor:pointer;
+  }
+  input[type=range]::-webkit-slider-thumb{
+    -webkit-appearance:none;width:13px;height:13px;border-radius:50%;
+    background:var(--accent);border:2px solid var(--paper);box-shadow:0 0 0 1px var(--accent);
+  }
+  .val{font-size:11px;color:var(--ink-soft);min-width:30px;text-align:right;font-variant-numeric:tabular-nums}
+
+  #stage{
+    position:relative;z-index:5;
+    height:calc(100vh - 57px);
+    padding:22px 34px 64px;
+    scroll-behavior:smooth;
+  }
+  #text{display:flex;flex-direction:column;gap:2px;max-width:1500px;margin:0 auto}
+  body.vertical #text{
+    flex-direction:row-reverse;align-items:flex-start;
+    max-width:none;width:max-content;margin:0 0 0 auto;
+    gap:8px;padding-right:16px;
+  }
+
+  .sec{display:flex;gap:14px;align-items:flex-start;padding:5px 0;border-bottom:1px dashed var(--line)}
+  body.vertical .sec{
+    flex-direction:column;gap:6px;padding:0 12px;
+    border-bottom:none;border-left:1px dashed var(--line);
+  }
+  .sec-title{
+    flex:0 0 62px;margin:0;font-size:calc(var(--fs) * .8);font-weight:600;
+    letter-spacing:1px;color:var(--accent);opacity:.85;
+    font-variant-numeric:tabular-nums;padding-top:2px;white-space:nowrap;
+  }
+  body.vertical .sec-title{flex:none;padding:0 0 4px;margin:0}
+
+  .grid{display:flex;flex-wrap:wrap;gap:2px 18px;flex:1 1 auto}
+  body.vertical .grid{flex-direction:column;flex-wrap:nowrap;gap:3px}
+
+  .line{
+    font-size:var(--fs);line-height:1.55;letter-spacing:.5px;
+    color:var(--ink);cursor:pointer;border-radius:5px;
+    transition:color .3s,text-shadow .3s,background .3s;
+    padding:1px 5px;white-space:nowrap;font-variant-numeric:tabular-nums;
+  }
+  body.vertical .line{line-height:1.35}
+  .line:hover{color:var(--accent);background:var(--line)}
+  .line.active{
+    color:var(--accent);font-weight:600;
+    text-shadow:0 0 18px rgba(141,44,31,.35);
+    background:linear-gradient(90deg,var(--line),transparent);
+  }
+  body.dark .line.active{text-shadow:0 0 22px rgba(217,139,95,.5)}
+
+  .foot{
+    position:fixed;left:0;right:0;bottom:0;z-index:20;
+    display:flex;align-items:center;gap:12px;
+    padding:8px 18px;font-size:11px;letter-spacing:1px;color:var(--ink-soft);
+    background:var(--glass);backdrop-filter:blur(14px);
+    -webkit-backdrop-filter:blur(14px);
+    border-top:1px solid var(--line);
+  }
+  .foot .note{margin-right:auto;opacity:.8;overflow:hidden;text-overflow:ellipsis;white-space:nowrap}
+  .prog{width:120px;height:3px;border-radius:3px;background:var(--line);overflow:hidden;flex:none}
+  .prog i{display:block;height:100%;width:0;background:var(--accent);transition:width .3s}
+  #topline{position:fixed;top:0;left:0;height:2px;width:0;background:var(--accent);z-index:30;transition:width .2s}
+
+  @media print{
+    body{overflow:visible;background:#fff!important;color:#000!important}
+    .bar,.foot,#topline{display:none!important}
+    #stage{height:auto;overflow:visible;padding:0}
+    #text{display:block!important;max-width:none}
+    .sec{display:block!important;page-break-inside:avoid;margin-bottom:6pt;border-bottom:1px solid #ddd}
+    .sec-title{color:#000!important;display:block;margin-bottom:2pt}
+    .line{color:#000!important;text-shadow:none!important;background:none!important;font-size:10pt!important;line-height:1.7;display:inline-block;margin-right:6pt}
+    .line.active{color:#000!important;font-weight:400!important}
+  }
+  @media (max-width:720px){
+    :root{--fs:16px}
+    #stage{padding:14px 14px 70px}
+    .brand span{display:none}
+    input[type=range]{width:56px}
+    .sec{gap:8px}
+    .sec-title{flex-basis:46px}
+    .grid{gap:2px 10px}
+  }
+</style>
+</head>
+<body class="light">
+
+<div id="topline"></div>
+
+<header class="bar">
+  <div class="brand">
+    <b>大九九乘法口诀</b>
+    <span>1×1 至 19×19 · 完整版</span>
+  </div>
+
+  <button class="btn" id="btnOrient">竖排</button>
+
+  <div class="group">
+    <label>字号</label>
+    <input type="range" id="fs" min="12" max="38" value="20">
+    <span class="val" id="fsVal">20</span>
+  </div>
+
+  <button class="btn" id="btnRead">▶ 朗读</button>
+  <button class="btn" id="btnStop">■ 停止</button>
+
+  <div class="group">
+    <label>语速</label>
+    <input type="range" id="rate" min="0.5" max="1.8" step="0.05" value="1">
+    <span class="val" id="rateVal">1</span>
+  </div>
+
+  <button class="btn" id="btnMusic">节拍</button>
+  <button class="btn" id="btnTheme">深色</button>
+  <button class="btn" id="btnFull">全屏</button>
+  <button class="btn" id="btnImg">存图</button>
+  <button class="btn" id="btnPdf">PDF</button>
+</header>
+
+<main id="stage"><article id="text"></article></main>
+
+<footer class="foot">
+  <span class="note">大九九乘法口诀 · 1×1 至 19×19 共 190 句 · 点击任意一句可从该句开始朗读</span>
+  <div class="prog"><i id="progBar"></i></div>
+  <span id="progTxt">0 / 0</span>
+</footer>
+
+<script>
+/* ==================== 口诀数据 ==================== */
+const MAX = 19;
+const DATA = [];
+for (let i = 1; i <= MAX; i++){
+  const lines = [];
+  for (let j = i; j <= MAX; j++){
+    lines.push(i + '×' + j + '=' + (i * j));
+  }
+  DATA.push({ title: i + ' 乘段', lines });
+}
+
+/* ==================== DOM ==================== */
+const textEl   = document.getElementById('text');
+const stageEl  = document.getElementById('stage');
+const topline  = document.getElementById('topline');
+const progBar  = document.getElementById('progBar');
+const progTxt  = document.getElementById('progTxt');
+const fsEl     = document.getElementById('fs');
+const fsVal    = document.getElementById('fsVal');
+const rateEl   = document.getElementById('rate');
+const rateVal  = document.getElementById('rateVal');
+
+let items = [];
+
+/* ==================== 渲染 ==================== */
+function render(){
+  textEl.innerHTML = '';
+  items = [];
+  DATA.forEach((sec, si) => {
+    const s = document.createElement('section');
+    s.className = 'sec';
+
+    const h = document.createElement('h2');
+    h.className = 'sec-title';
+    h.textContent = sec.title;
+    s.appendChild(h);
+
+    const g = document.createElement('div');
+    g.className = 'grid';
+
+    sec.lines.forEach((ln, li) => {
+      const d = document.createElement('span');
+      d.className = 'line';
+      d.textContent = ln;
+      d.addEventListener('click', () => startFrom(si, li));
+      g.appendChild(d);
+      items.push({ el: d, si, li, text: ln });
+    });
+
+    s.appendChild(g);
+    textEl.appendChild(s);
+  });
+  updateProgress(-1);
+}
+render();
+
+/* ==================== 字号 ==================== */
+function applyFs(v){
+  v = Math.max(12, Math.min(38, +v));
+  document.documentElement.style.setProperty('--fs', v + 'px');
+  fsVal.textContent = v;
+  fsEl.value = v;
+}
+fsEl.addEventListener('input', e => applyFs(e.target.value));
+
+/* ==================== 横竖排 ==================== */
+const btnOrient = document.getElementById('btnOrient');
+function setOrient(vertical){
+  document.body.classList.toggle('vertical', vertical);
+  btnOrient.textContent = vertical ? '横排' : '竖排';
+  btnOrient.classList.toggle('on', vertical);
+  stageEl.scrollTo({ left: stageEl.scrollWidth, top: 0 });
+}
+btnOrient.addEventListener('click', () => setOrient(!document.body.classList.contains('vertical')));
+
+/* ==================== 主题 ==================== */
+const btnTheme = document.getElementById('btnTheme');
+function setTheme(dark){
+  document.body.classList.toggle('dark', dark);
+  document.body.classList.toggle('light', !dark);
+  btnTheme.textContent = dark ? '浅色' : '深色';
+  btnTheme.classList.toggle('on', dark);
+  try { localStorage.setItem('mt-dark', dark ? '1' : '0'); } catch(e){}
+}
+btnTheme.addEventListener('click', () => setTheme(!document.body.classList.contains('dark')));
+try { if (localStorage.getItem('mt-dark') === '1') setTheme(true); } catch(e){}
+
+/* ==================== 全屏 ==================== */
+const btnFull = document.getElementById('btnFull');
+btnFull.addEventListener('click', () => {
+  if (!document.fullscreenElement) document.documentElement.requestFullscreen?.();
+  else document.exitFullscreen?.();
+});
+document.addEventListener('fullscreenchange', () => {
+  btnFull.textContent = document.fullscreenElement ? '退出' : '全屏';
+  btnFull.classList.toggle('on', !!document.fullscreenElement);
+});
+
+/* ==================== 朗读 ==================== */
+const btnRead = document.getElementById('btnRead');
+const btnStop = document.getElementById('btnStop');
+const synth = window.speechSynthesis;
+let queue = [], qi = 0, runId = 0, reading = false;
+
+rateEl.addEventListener('input', () => { rateVal.textContent = rateEl.value; });
+rateVal.textContent = rateEl.value;
+
+/* 把 “3×7=21” 转成可读的 “三乘七等于二十一” */
+const CN = ['零','一','二','三','四','五','六','七','八','九'];
+function cn(n){
+  if (n < 10) return CN[n];
+  if (n < 20) return '十' + (n % 10 ? CN[n % 10] : '');
+  if (n < 100){
+    const t = Math.floor(n / 10), r = n % 10;
+    return CN[t] + '十' + (r ? CN[r] : '');
+  }
+  const h = Math.floor(n / 100), r = n % 100;
+  return CN[h] + '百' + (r === 0 ? '' : (r < 10 ? '零' + CN[r] : cn(r)));
+}
+function speakText(s){
+  const m = s.match(/^(\d+)×(\d+)=(\d+)$/);
+  if (!m) return s;
+  return cn(+m[1]) + '乘' + cn(+m[2]) + '等于' + cn(+m[3]);
+}
+
+function buildQueue(si, li){
+  queue = [];
+  DATA.forEach((sec, i) => {
+    sec.lines.forEach((ln, j) => {
+      if (i > si || (i === si && j >= li)) queue.push({ si: i, li: j, text: ln });
+    });
+  });
+}
+
+function updateProgress(idx){
+  const total = items.length;
+  const done = idx + 1;
+  progBar.style.width = total ? (done / total * 100) + '%' : '0%';
+  progTxt.textContent = done + ' / ' + total;
+}
+
+function highlight(si, li){
+  let idx = -1;
+  items.forEach((it, k) => {
+    const on = it.si === si && it.li === li;
+    it.el.classList.toggle('active', on);
+    if (on) idx = k;
+  });
+  if (idx >= 0){
+    updateProgress(idx);
+    items[idx].el.scrollIntoView({ block:'center', inline:'center', behavior:'smooth' });
+  }
+}
+
+function stopSpeak(){
+  runId++;
+  reading = false;
+  try { synth.cancel(); } catch(e){}
+  items.forEach(it => it.el.classList.remove('active'));
+  btnRead.textContent = '▶ 朗读';
+  btnRead.classList.remove('on');
+  updateProgress(-1);
+}
+
+function speakNext(myRun){
+  if (myRun !== runId) return;
+  if (qi >= queue.length){ stopSpeak(); return; }
+
+  const item = queue[qi];
+  const u = new SpeechSynthesisUtterance(speakText(item.text));
+  u.lang = 'zh-CN';
+  u.rate = parseFloat(rateEl.value);
+  u.pitch = 1;
+
+  u.onstart = () => { if (myRun === runId) highlight(item.si, item.li); };
+  const next = () => {
+    if (myRun !== runId) return;
+    qi++;
+    setTimeout(() => speakNext(myRun), 150);
+  };
+  u.onend = next;
+  u.onerror = next;
+
+  synth.speak(u);
+}
+
+function startFrom(si, li){
+  if (!synth){ alert('当前浏览器不支持语音朗读，请使用 Chrome / Edge。'); return; }
+  stopSpeak();
+  buildQueue(si, li);
+  qi = 0;
+  reading = true;
+  const myRun = ++runId;
+  btnRead.textContent = '⏸ 暂停';
+  btnRead.classList.add('on');
+  speakNext(myRun);
+}
+
+btnRead.addEventListener('click', () => {
+  if (!synth){ alert('当前浏览器不支持语音朗读，请使用 Chrome / Edge。'); return; }
+  if (!reading){ startFrom(0, 0); return; }
+  if (synth.paused){
+    synth.resume();
+    btnRead.textContent = '⏸ 暂停';
+  } else {
+    synth.pause();
+    btnRead.textContent = '▶ 继续';
+  }
+});
+btnStop.addEventListener('click', stopSpeak);
+window.addEventListener('beforeunload', () => { try { synth.cancel(); } catch(e){} });
+
+/* ==================== 背景节拍（WebAudio 合成） ==================== */
+const btnMusic = document.getElementById('btnMusic');
+let ac = null, master = null, timer = null, step = 0, nextTime = 0, musicMode = 'off';
+
+function ensureAudio(){
+  if (ac) return;
+  ac = new (window.AudioContext || window.webkitAudioContext)();
+  master = ac.createGain();
+  master.gain.value = 0.5;
+  master.connect(ac.destination);
+}
+
+function tok(t, accent){
+  const o = ac.createOscillator(), g = ac.createGain(), f = ac.createBiquadFilter();
+  o.type = 'triangle';
+  o.frequency.setValueAtTime(accent ? 900 : 700, t);
+  o.frequency.exponentialRampToValueAtTime(accent ? 330 : 290, t + 0.08);
+  f.type = 'bandpass'; f.frequency.value = 980; f.Q.value = 3.2;
+  g.gain.setValueAtTime(0.0001, t);
+  g.gain.linearRampToValueAtTime(accent ? 0.30 : 0.15, t + 0.006);
+  g.gain.exponentialRampToValueAtTime(0.0001, t + 0.18);
+  o.connect(f); f.connect(g); g.connect(master);
+  o.start(t); o.stop(t + 0.2);
+}
+
+function blip(t){
+  const o = ac.createOscillator(), g = ac.createGain();
+  o.type = 'sine';
+  o.frequency.setValueAtTime(1500, t);
+  o.frequency.exponentialRampToValueAtTime(1100, t + 0.04);
+  g.gain.setValueAtTime(0.0001, t);
+  g.gain.linearRampToValueAtTime(0.09, t + 0.004);
+  g.gain.exponentialRampToValueAtTime(0.0001, t + 0.09);
+  o.connect(g); g.connect(master);
+  o.start(t); o.stop(t + 0.1);
+}
+
+function schedule(){
+  if (!ac) return;
+  while (nextTime < ac.currentTime + 0.35){
+    if (musicMode === 'beat'){
+      if (step % 4 === 0) tok(nextTime, true);
+      else blip(nextTime);
+      nextTime += 0.55;
+    } else if (musicMode === 'wood'){
+      if (step % 2 === 0) tok(nextTime, step % 8 === 0);
+      nextTime += 0.8;
+    } else {
+      nextTime += 0.3;
+    }
+    step++;
+  }
+}
+
+function setMusic(mode){
+  ensureAudio();
+  if (ac.state === 'suspended') ac.resume();
+  musicMode = mode;
+  step = 0;
+  nextTime = ac.currentTime + 0.1;
+  if (timer) { clearInterval(timer); timer = null; }
+  if (mode !== 'off') timer = setInterval(schedule, 90);
+  btnMusic.textContent = { off:'节拍', beat:'木鱼', wood:'静音' }[mode];
+  btnMusic.classList.toggle('on', mode !== 'off');
+}
+btnMusic.addEventListener('click', () => {
+  setMusic({ off:'beat', beat:'wood', wood:'off' }[musicMode]);
+});
+
+/* ==================== 阅读进度 ==================== */
+stageEl.addEventListener('scroll', () => {
+  const vertical = document.body.classList.contains('vertical');
+  const max = vertical ? (stageEl.scrollWidth - stageEl.clientWidth) : (stageEl.scrollHeight - stageEl.clientHeight);
+  const cur = vertical ? Math.abs(stageEl.scrollLeft) : stageEl.scrollTop;
+  const p = max > 0 ? Math.min(1, cur / max) : 0;
+  topline.style.width = (p * 100) + '%';
+}, { passive:true });
+
+/* ==================== 导出图片 ==================== */
+function exportImage(){
+  const dark = document.body.classList.contains('dark');
+  const paper  = dark ? '#14110e' : '#f5eee2';
+  const paper2 = dark ? '#1a1611' : '#faf5ec';
+  const ink    = dark ? '#e9ddc9' : '#241c14';
+  const soft   = dark ? '#9d8d76' : '#6b5a45';
+  const accent = dark ? '#d98b5f' : '#8d2c1f';
+  const gold   = dark ? '#c9a86a' : '#a8803f';
+
+  const W = 1480;
+  const padL = 96, padR = 96, padT = 190, padB = 150;
+  const fsCell = 22, cellGapX = 26, cellGapY = 10, labelW = 96;
+  const contentW = W - padL - padR - labelW;
+
+  const cv = document.createElement('canvas');
+  const ctx0 = cv.getContext('2d');
+  const FONT = fsCell + 'px "Songti SC","STSong","SimSun",serif';
+  ctx0.font = FONT;
+
+  // 预排版
+  const rows = [];
+  DATA.forEach(sec => {
+    let cur = [], w = 0;
+    sec.lines.forEach(ln => {
+      const lw = ctx0.measureText(ln).width;
+      if (w > 0 && w + cellGapX + lw > contentW){
+        rows.push({ title: sec.title, cells: cur });
+        cur = []; w = 0;
+      }
+      cur.push({ s: ln, w: lw });
+      w += (cur.length > 1 ? cellGapX : 0) + lw;
+    });
+    if (cur.length) rows.push({ title: sec.title, cells: cur });
+  });
+
+  const rowH = fsCell + cellGapY + 8;
+  const H = Math.round(padT + padB + rows.length * rowH);
+
+  const dpr = Math.min(2, window.devicePixelRatio || 1);
+  cv.width = W * dpr; cv.height = H * dpr;
+  const ctx = cv.getContext('2d');
+  ctx.scale(dpr, dpr);
+
+  const bg = ctx.createLinearGradient(0, 0, W, H);
+  bg.addColorStop(0, paper);
+  bg.addColorStop(.5, paper2);
+  bg.addColorStop(1, paper);
+  ctx.fillStyle = bg;
+  ctx.fillRect(0, 0, W, H);
+
+  ctx.globalAlpha = .05;
+  for (let i = 0; i < 3400; i++){
+    ctx.fillStyle = dark ? '#ffffff' : '#5a3c1e';
+    ctx.fillRect(Math.random() * W, Math.random() * H, 1.4, 1.4);
+  }
+  ctx.globalAlpha = 1;
+
+  ctx.strokeStyle = gold; ctx.lineWidth = 1.6;
+  ctx.strokeRect(34, 34, W - 68, H - 68);
+  ctx.globalAlpha = .45; ctx.lineWidth = .8;
+  ctx.strokeRect(44, 44, W - 88, H - 88);
+  ctx.globalAlpha = 1;
+
+  ctx.fillStyle = accent;
+  ctx.font = '600 44px "Songti SC","STSong","SimSun",serif';
+  ctx.textAlign = 'center'; ctx.textBaseline = 'middle';
+  ctx.fillText('大九九乘法口诀', W / 2, 100);
+
+  ctx.fillStyle = soft;
+  ctx.font = '15px "Songti SC","STSong",serif';
+  ctx.fillText('1×1 至 19×19 · 完整版 · 共 190 句', W / 2, 142);
+
+  ctx.textAlign = 'left'; ctx.textBaseline = 'middle';
+  rows.forEach((row, ri) => {
+    const y = padT + ri * rowH;
+    ctx.fillStyle = accent;
+    ctx.font = '600 15px "Songti SC","STSong",serif';
+    ctx.globalAlpha = .85;
+    ctx.fillText(row.title, padL, y + fsCell / 2);
+    ctx.globalAlpha = 1;
+
+    let x = padL + labelW;
+    ctx.fillStyle = ink;
+    ctx.font = FONT;
+    row.cells.forEach(c => {
+      ctx.fillText(c.s, x, y + fsCell / 2);
+      x += c.w + cellGapX;
+    });
+
+    ctx.strokeStyle = dark ? 'rgba(217,139,95,.14)' : 'rgba(141,44,31,.10)';
+    ctx.lineWidth = .7;
+    ctx.beginPath();
+    ctx.moveTo(padL, y + rowH - 3);
+    ctx.lineTo(W - padR, y + rowH - 3);
+    ctx.stroke();
+  });
+
+  ctx.fillStyle = soft;
+  ctx.font = '14px "Songti SC","STSong",serif';
+  ctx.textAlign = 'left'; ctx.textBaseline = 'alphabetic';
+  ctx.fillText('大九九乘法口诀 · 1×1 至 19×19 共 190 句', 62, H - 62);
+
+  ctx.save();
+  ctx.translate(W - 74, H - 96);
+  ctx.fillStyle = accent; ctx.globalAlpha = .9;
+  ctx.fillRect(0, 0, 52, 52);
+  ctx.globalAlpha = 1;
+  ctx.fillStyle = paper;
+  ctx.font = '600 17px "Songti SC","STSong",serif';
+  ctx.textAlign = 'center'; ctx.textBaseline = 'middle';
+  ctx.fillText('大', 26, 17); ctx.fillText('九', 26, 37);
+  ctx.restore();
+
+  cv.toBlob(blob => {
+    const a = document.createElement('a');
+    a.href = URL.createObjectURL(blob);
+    a.download = '大九九乘法口诀.png';
+    a.click();
+    setTimeout(() => URL.revokeObjectURL(a.href), 4000);
+  }, 'image/png');
+}
+document.getElementById('btnImg').addEventListener('click', exportImage);
+document.getElementById('btnPdf').addEventListener('click', () => window.print());
+
+/* ==================== 键盘快捷键 ==================== */
+document.addEventListener('keydown', e => {
+  if (e.target.tagName === 'INPUT') return;
+  const k = e.key.toLowerCase();
+  if (k === ' '){ e.preventDefault(); btnRead.click(); }
+  else if (k === 'v'){ setOrient(!document.body.classList.contains('vertical')); }
+  else if (k === 't'){ btnTheme.click(); }
+  else if (k === 'f'){ btnFull.click(); }
+  else if (k === 'm'){ btnMusic.click(); }
+  else if (k === 'escape'){ stopSpeak(); }
+  else if (k === '+' || k === '='){ applyFs(+fsEl.value + 2); }
+  else if (k === '-'){ applyFs(+fsEl.value - 2); }
+});
+</script>
+</body>
+</html>
