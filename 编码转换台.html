@@ -1,0 +1,1566 @@
+<!DOCTYPE html>
+<html lang="zh-CN">
+<head>
+<meta charset="UTF-8">
+<meta name="viewport" content="width=device-width, initial-scale=1.0">
+<title>编码转换台 · Codec Lab</title>
+<style>
+  :root {
+    --bg: #1b1d21;
+    --bg2: #23262b;
+    --bg3: #2b2f36;
+    --line: #383d45;
+    --fg: #d8dde5;
+    --fg-dim: #8b93a1;
+    --accent: #4c8dff;
+    --hit: #ffc861;
+    --grp: #9b7bff;
+    --err: #f07f76;
+    --ok: #57c26b;
+  }
+  * { box-sizing: border-box; }
+  html, body { height: 100%; margin: 0; }
+  body {
+    background: var(--bg); color: var(--fg);
+    font: 13px/1.6 "Segoe UI", "Microsoft YaHei", system-ui, sans-serif;
+    display: flex; flex-direction: column; overflow: hidden;
+  }
+  .mono, input, textarea, table, code, #out { font-family: "Cascadia Code", "JetBrains Mono", Consolas, "Courier New", monospace; }
+
+  /* ---------- 标题栏 ---------- */
+  .titlebar {
+    display: flex; align-items: center; gap: 10px;
+    height: 40px; padding: 0 12px; flex: none;
+    background: var(--bg2); border-bottom: 1px solid var(--line);
+  }
+  .logo {
+    width: 22px; height: 22px; border-radius: 5px; flex: none;
+    background: linear-gradient(135deg, #4c8dff, #7b5cff);
+    display: grid; place-items: center; font-size: 12px;
+  }
+  .titlebar h1 { font-size: 14px; margin: 0; font-weight: 600; letter-spacing: .3px; }
+  .titlebar .sub { color: var(--fg-dim); font-size: 12px; }
+  .titlebar .sp { flex: 1; }
+  .chip {
+    font-size: 12px; color: var(--fg-dim); padding: 3px 10px;
+    border: 1px solid var(--line); border-radius: 20px; white-space: nowrap;
+  }
+  .chip b { color: var(--fg); font-weight: 600; }
+
+  /* ---------- 工具栏 ---------- */
+  .toolbar {
+    display: flex; align-items: center; gap: 6px; flex-wrap: wrap;
+    padding: 8px 12px; flex: none;
+    background: var(--bg2); border-bottom: 1px solid var(--line);
+  }
+  .grp { display: flex; align-items: center; gap: 4px; }
+  .lbl { color: var(--fg-dim); font-size: 12px; margin-right: 2px; white-space: nowrap; }
+  .sep { width: 1px; height: 20px; background: var(--line); margin: 0 4px; }
+  button, select, input, textarea {
+    background: var(--bg3); color: var(--fg); border: 1px solid var(--line);
+    border-radius: 5px; padding: 4px 9px; font-size: 12px; cursor: pointer;
+    font-family: inherit;
+  }
+  input, textarea { cursor: text; }
+  button:hover:not(:disabled), select:hover { border-color: #4a515c; background: #333842; }
+  button:disabled { opacity: .4; cursor: not-allowed; }
+  button.on { background: #2c4a78; border-color: #4c8dff; color: #cfe0ff; }
+  .grow { flex: 1; }
+  .catbtn { padding: 5px 12px; }
+  .modebtn { padding: 4px 10px; }
+  #dirBtn { min-width: 84px; }
+  .keyin { width: 210px; }
+
+  /* ---------- 选项条 ---------- */
+  .optbar {
+    display: flex; align-items: center; gap: 10px; flex-wrap: wrap;
+    padding: 6px 12px; flex: none;
+    background: #202329; border-bottom: 1px solid var(--line);
+    min-height: 34px;
+  }
+  .optbar .grp label { display: flex; align-items: center; gap: 4px; font-size: 12px; color: var(--fg-dim); cursor: pointer; user-select: none; }
+  .optbar input[type=checkbox] { width: 13px; height: 13px; padding: 0; cursor: pointer; }
+  .optbar .hint { font-size: 11px; color: var(--fg-dim); }
+  .optbar input[type=number] { width: 62px; }
+
+  /* ---------- 错误条 ---------- */
+  #err {
+    display: none; flex: none; align-items: center; gap: 8px;
+    padding: 7px 12px; font-size: 12px;
+    background: rgba(240, 127, 118, .14); border-bottom: 1px solid rgba(240, 127, 118, .45);
+    color: #ffc9c4; white-space: pre-wrap; word-break: break-word;
+  }
+  #err.show { display: flex; }
+  #err b { color: #fff; }
+
+  /* ---------- 弹出面板 ---------- */
+  .pop {
+    position: fixed; z-index: 60; background: var(--bg2);
+    border: 1px solid var(--line); border-radius: 8px;
+    box-shadow: 0 12px 36px rgba(0, 0, 0, .55);
+    padding: 12px 14px; width: 420px; display: none;
+    max-height: 78vh; overflow: auto;
+  }
+  .pop.show { display: block; }
+  .pop h3 { margin: 0 0 8px; font-size: 13px; }
+  .pop h4 { margin: 12px 0 4px; font-size: 12px; color: var(--accent); }
+  .pop p, .pop li { font-size: 12px; color: var(--fg-dim); margin: 4px 0; line-height: 1.75; }
+  .pop ul { margin: 0; padding-left: 18px; }
+  .pop kbd {
+    background: var(--bg3); border: 1px solid var(--line); border-bottom-width: 2px;
+    border-radius: 4px; padding: 0 5px; font-size: 11px; color: var(--fg);
+  }
+  .pop code { background: var(--bg3); border-radius: 3px; padding: 0 4px; color: #cfe0ff; font-size: 11px; }
+
+  /* ---------- 主体 ---------- */
+  main { flex: 1; display: flex; min-height: 0; }
+  .pane { flex: 1; display: flex; flex-direction: column; min-width: 0; }
+  .pane + .pane { border-left: 1px solid var(--line); }
+  .phead {
+    display: flex; align-items: center; gap: 6px; flex: none; min-height: 30px;
+    padding: 0 10px; background: #202329;
+    border-bottom: 1px solid var(--line); font-size: 12px; color: var(--fg-dim);
+    flex-wrap: wrap;
+  }
+  .phead .sp { flex: 1; }
+  .tab { border: 0; background: transparent; padding: 6px 9px; border-radius: 0; border-bottom: 2px solid transparent; }
+  .tab:hover { background: var(--bg3); }
+  .tab.on { color: var(--fg); border-bottom-color: var(--accent); background: transparent; }
+  textarea {
+    flex: 1; width: 100%; border: 0; outline: none; resize: none;
+    background: var(--bg); color: var(--fg); padding: 12px 14px;
+    font-size: 13px; line-height: 1.85; tab-size: 4;
+  }
+  textarea:disabled { color: var(--fg-dim); background: #1e2024; cursor: not-allowed; }
+  #out { background: #1e2126; cursor: text; user-select: text; }
+  .body { flex: 1; display: none; min-height: 0; flex-direction: column; }
+  .body.on { display: flex; }
+  .note {
+    margin: 8px 14px 0; padding: 6px 10px; border-radius: 6px; font-size: 12px;
+    background: rgba(255, 200, 97, .10); border: 1px solid rgba(255, 200, 97, .3);
+    color: #ffe0a8; font-family: inherit; white-space: pre-wrap; word-break: break-word;
+  }
+  .empty {
+    display: grid; place-items: center; height: 100%; padding: 0 20px;
+    color: var(--fg-dim); font-size: 13px; text-align: center; line-height: 2; font-family: inherit;
+  }
+
+  /* ---------- 表格 ---------- */
+  .tblwrap { flex: 1; overflow: auto; }
+  table { width: 100%; border-collapse: collapse; font-size: 12px; }
+  th, td { padding: 4px 8px; border-bottom: 1px solid #2a2e34; text-align: left; vertical-align: top; }
+  th {
+    position: sticky; top: 0; z-index: 2; background: #202329; color: var(--fg-dim);
+    font-weight: 600; white-space: nowrap; border-bottom: 1px solid var(--line);
+  }
+  tbody tr:hover { background: #262a31; }
+  td.n { color: var(--fg-dim); text-align: right; white-space: nowrap; }
+  td.k { color: var(--accent); white-space: nowrap; }
+  td.v { word-break: break-all; }
+  td.good { color: var(--ok); }
+  td.bad { color: var(--err); }
+  td.dim { color: var(--fg-dim); }
+  tr.pick { background: rgba(87, 194, 107, .10); }
+  tr.pick td:first-child::after { content: '推荐'; color: var(--ok); margin-left: 6px; font-size: 11px; }
+
+  /* ---------- 状态栏 ---------- */
+  footer {
+    display: flex; align-items: center; gap: 10px; flex: none;
+    height: 26px; padding: 0 12px; background: var(--bg2);
+    border-top: 1px solid var(--line); font-size: 12px; color: var(--fg-dim);
+    white-space: nowrap; overflow: hidden;
+  }
+  footer .sp { flex: 1; }
+  footer b { color: var(--fg); font-weight: 600; }
+  footer .bad { color: var(--err); }
+  footer .good { color: var(--ok); }
+
+  /* ---------- Toast ---------- */
+  #toast {
+    position: fixed; left: 50%; bottom: 46px; transform: translateX(-50%) translateY(12px);
+    background: #2f343c; border: 1px solid var(--line); color: var(--fg);
+    padding: 7px 14px; border-radius: 6px; font-size: 12px;
+    box-shadow: 0 8px 24px rgba(0, 0, 0, .5);
+    opacity: 0; pointer-events: none; transition: opacity .18s, transform .18s; z-index: 90;
+  }
+  #toast.show { opacity: 1; transform: translateX(-50%) translateY(0); }
+
+  @media (max-width: 860px) {
+    main { flex-direction: column; }
+    .pane + .pane { border-left: 0; border-top: 1px solid var(--line); }
+    .pop { width: calc(100vw - 24px); }
+  }
+</style>
+</head>
+<body>
+
+<div class="titlebar">
+  <div class="logo">码</div>
+  <h1>编码转换台</h1>
+  <span class="sub">Base64 · URL · Hex · Unicode · 实体 · 摘要 · JWT · 随机</span>
+  <span class="sp"></span>
+  <span class="chip" id="capChip">能力检测中</span>
+</div>
+
+<div class="toolbar">
+  <div class="grp" id="catBar">
+    <button class="catbtn on" data-cat="enc">编码</button>
+    <button class="catbtn" data-cat="hash">摘要</button>
+    <button class="catbtn" data-cat="jwt">JWT</button>
+    <button class="catbtn" data-cat="rand">随机</button>
+  </div>
+  <div class="sep"></div>
+  <div class="grp" id="modeBar"></div>
+  <button id="dirBtn" class="on" title="切换编码 / 解码方向（空格键同效）">→ 编码</button>
+  <div class="grow"></div>
+  <button id="swapBtn" title="把结果填回输入框，做一次反向验证">结果 → 输入</button>
+  <button id="sampleBtn" title="填入当前模式的示例内容">示例</button>
+  <button id="copyBtn" title="复制结果 (Ctrl+Shift+C)">复制</button>
+  <button id="dlBtn" title="下载结果为 txt (Ctrl+S)">下载</button>
+  <button id="helpBtn" title="使用说明与能力边界">帮助</button>
+</div>
+
+<div class="optbar" id="optBar">
+  <div class="grp" data-modes="base64">
+    <label><input type="checkbox" id="optWrap"> 每 76 字符换行</label>
+    <span class="hint">解码自动容忍空白、Base64URL 字母表与缺失的 =</span>
+  </div>
+
+  <div class="grp" data-modes="base64url">
+    <span class="lbl">填充</span>
+    <select id="optPad">
+      <option value="no">去掉 = （默认）</option>
+      <option value="yes">补齐 =</option>
+    </select>
+    <span class="hint">字母表固定为 - 与 _</span>
+  </div>
+
+  <div class="grp" data-modes="url">
+    <span class="lbl">方式</span>
+    <select id="optUrlStyle">
+      <option value="component">encodeURIComponent（默认，保留 -_.!~*'()）</option>
+      <option value="uri">encodeURI（保留 URL 结构字符）</option>
+      <option value="all">全部字节（非 unreserved 一律 %XX）</option>
+    </select>
+    <label><input type="checkbox" id="optUrlPlus"> 解码时把 + 当空格</label>
+  </div>
+
+  <div class="grp" data-modes="hex">
+    <span class="lbl">分隔符</span>
+    <select id="optHexSep">
+      <option value="">无</option>
+      <option value=" ">空格</option>
+      <option value=":">冒号</option>
+      <option value="-">短横线</option>
+      <option value="&#10;">换行</option>
+    </select>
+    <label><input type="checkbox" id="optHexUpper" checked> 大写字母</label>
+    <span class="hint">解码自动忽略 空格 / : / - / 逗号 / 0x 前缀</span>
+  </div>
+
+  <div class="grp" data-modes="unicode">
+    <span class="lbl">范围</span>
+    <select id="optUniScope">
+      <option value="nonascii">仅非 ASCII（默认）</option>
+      <option value="all">所有字符</option>
+    </select>
+    <label><input type="checkbox" id="optUniUpper" checked> 十六进制大写</label>
+    <span class="hint">控制字符始终转义；解码支持 &#92;uXXXX、&#92;u{…}、&#92;xXX</span>
+  </div>
+
+  <div class="grp" data-modes="entity">
+    <span class="lbl">范围</span>
+    <select id="optEntScope">
+      <option value="basic">&amp; &lt; &gt; " '（默认）</option>
+      <option value="all">上述 + 非 ASCII 转数字实体</option>
+    </select>
+    <span class="hint">反转义支持数字实体与内置 56 个命名实体</span>
+  </div>
+
+  <div class="grp" data-modes="bytes">
+    <span class="lbl">输入格式</span>
+    <select id="optBytesFmt">
+      <option value="auto">自动识别（默认）</option>
+      <option value="hex">按 Hex</option>
+      <option value="b64">按 Base64</option>
+    </select>
+    <span class="hint">同一份字节并排用多种编码解码，按可疑字符数排序</span>
+  </div>
+
+  <div class="grp" data-modes="hash">
+    <span class="lbl">算法</span>
+    <select id="optAlg">
+      <option value="MD5">MD5（内置实现）</option>
+      <option value="SHA-1">SHA-1</option>
+      <option value="SHA-256" selected>SHA-256</option>
+      <option value="SHA-384">SHA-384</option>
+      <option value="SHA-512">SHA-512</option>
+    </select>
+    <span class="lbl">输出</span>
+    <select id="optOutFmt">
+      <option value="hex">十六进制小写</option>
+      <option value="b64">Base64</option>
+      <option value="b64u">Base64URL</option>
+    </select>
+    <span class="lbl">字节来源</span>
+    <select id="optSrc">
+      <option value="text">输入按 UTF-8 文本（默认）</option>
+      <option value="hex">输入按 Hex 字节</option>
+      <option value="b64">输入按 Base64 字节</option>
+    </select>
+    <label><input type="checkbox" id="optAll"> 一次列出全部算法</label>
+  </div>
+
+  <div class="grp" data-modes="hmac">
+    <span class="lbl">算法</span>
+    <select id="optHAlg">
+      <option value="SHA-1">HMAC-SHA1</option>
+      <option value="SHA-256" selected>HMAC-SHA256</option>
+      <option value="SHA-384">HMAC-SHA384</option>
+      <option value="SHA-512">HMAC-SHA512</option>
+    </select>
+    <span class="lbl">输出</span>
+    <select id="optHOut">
+      <option value="hex">十六进制小写</option>
+      <option value="b64">Base64</option>
+      <option value="b64u">Base64URL</option>
+    </select>
+    <input type="text" id="optKey" class="keyin" spellcheck="false" placeholder="密钥">
+    <select id="optKeyFmt" title="密钥本身的编码">
+      <option value="utf8">密钥按 UTF-8</option>
+      <option value="hex">密钥按 Hex</option>
+      <option value="b64">密钥按 Base64</option>
+    </select>
+  </div>
+
+  <div class="grp" data-modes="jwt">
+    <input type="text" id="optJwtKey" class="keyin" spellcheck="false" placeholder="HMAC 密钥（用于验签，可留空）">
+    <select id="optJwtKeyFmt" title="密钥本身的编码">
+      <option value="utf8">密钥按 UTF-8</option>
+      <option value="hex">密钥按 Hex</option>
+      <option value="b64">密钥按 Base64</option>
+    </select>
+    <span class="hint">支持 HS256 / HS384 / HS512 验签；RS / ES / PS 只解析不验签</span>
+  </div>
+
+  <div class="grp" data-modes="random">
+    <span class="lbl">长度</span>
+    <input type="number" id="optLen" min="4" max="128" step="1" value="20">
+    <span class="lbl">条数</span>
+    <input type="number" id="optCount" min="1" max="200" step="1" value="5">
+    <label><input type="checkbox" id="optLow" checked> a-z</label>
+    <label><input type="checkbox" id="optUp" checked> A-Z</label>
+    <label><input type="checkbox" id="optNum" checked> 0-9</label>
+    <label><input type="checkbox" id="optSym"> 符号</label>
+    <label><input type="checkbox" id="optAmbig"> 排除易混淆 iIlLoO01</label>
+    <select id="optRndFmt">
+      <option value="text">每行一个</option>
+      <option value="json">JSON 数组</option>
+      <option value="js">JS 字符串字面量</option>
+    </select>
+    <button id="uuidBtn" title="改用 crypto 生成 UUID v4">UUID v4</button>
+  </div>
+</div>
+
+<div id="err"></div>
+
+<main>
+  <div class="pane">
+    <div class="phead">
+      <span id="inLabel">输入</span>
+      <span class="sp"></span>
+      <span id="inCount">0 字符</span>
+    </div>
+    <div class="note" id="inNote" style="display:none"></div>
+    <textarea id="ta" spellcheck="false" placeholder="把内容粘贴到这里，也可以直接把 .txt 文件拖到页面上"></textarea>
+  </div>
+
+  <div class="pane">
+    <div class="phead">
+      <button class="tab on" data-tab="out">结果</button>
+      <button class="tab" data-tab="info">附加信息 <span id="infoCount"></span></button>
+      <span class="sp"></span>
+      <span id="outCount"></span>
+    </div>
+    <div class="body on" id="bodyOut">
+      <div class="note" id="outNote" style="display:none"></div>
+      <textarea id="out" readonly spellcheck="false"></textarea>
+    </div>
+    <div class="body" id="bodyInfo">
+      <div class="tblwrap" id="infoBox"></div>
+    </div>
+  </div>
+</main>
+
+<footer>
+  <span id="stMode">—</span>
+  <span class="sp"></span>
+  <span id="stMain"></span>
+</footer>
+
+<div class="pop" id="helpPop">
+  <h3>编码转换台 · 使用说明</h3>
+
+  <h4>四类模式</h4>
+  <ul>
+    <li><b>编码</b>：Base64、Base64URL、URL 百分号、Hex、<code>\uXXXX</code>、HTML 实体，以及「字节解码」——把一份 Hex/Base64 字节同时用 UTF-8 / GBK / GB18030 / Big5 / Shift_JIS / EUC-KR / UTF-16 / windows-1252 解出来对比，专治乱码。</li>
+    <li><b>摘要</b>：MD5（页面内置实现）与 SHA-1 / SHA-256 / SHA-384 / SHA-512（Web Crypto），另有 HMAC 带密钥摘要。</li>
+    <li><b>JWT</b>：拆 header 与 payload、人性化 <code>exp</code> / <code>iat</code> / <code>nbf</code>，并用 HMAC 密钥本地验签。</li>
+    <li><b>随机</b>：<code>crypto.getRandomValues</code> 生成密码 / Token（无偏取值）与 UUID v4。</li>
+  </ul>
+
+  <h4>快捷键</h4>
+  <ul>
+    <li><kbd>空格</kbd> 切换编码 / 解码方向（输入框内无效）</li>
+    <li><kbd>Alt</kbd>+<kbd>1</kbd>…<kbd>4</kbd> 切换四类模式</li>
+    <li><kbd>Ctrl</kbd>+<kbd>Enter</kbd> 立即重算</li>
+    <li><kbd>Ctrl</kbd>+<kbd>Shift</kbd>+<kbd>C</kbd> 复制结果</li>
+    <li><kbd>Ctrl</kbd>+<kbd>S</kbd> 下载结果</li>
+    <li><kbd>Ctrl</kbd>+<kbd>K</kbd> 聚焦输入框</li>
+    <li><kbd>Esc</kbd> 关闭弹层</li>
+  </ul>
+
+  <h4>能力边界（不做的事）</h4>
+  <ul>
+    <li><b>GBK 只能解码不能编码</b>：浏览器 <code>TextEncoder</code> 只有 UTF-8，所以「文本 → GBK 字节」做不了，反向可以。</li>
+    <li><b>非对称 JWT 无法验签</b>：RS / ES / PS 需要导入公钥，本工具只解析内容并明确标注未验签。</li>
+    <li><b>命名实体只内置 56 个</b>：未收录的 <code>&amp;xxx;</code> 原样保留，不猜。</li>
+    <li><b>MD5 / SHA-1 已不安全</b>：仅在对接旧系统时使用，不要用于新设计的完整性校验。</li>
+    <li>输入上限 20 万字符；字节类输入解码后上限 4 MB；结果超过 30 万字符时只截断显示，复制与下载仍是完整内容。</li>
+  </ul>
+
+  <h4>隐私</h4>
+  <p>零网络请求。所有内容只在浏览器内存中处理；模式、选项、密钥与不超过 5 万字符的输入会写入本机 <code>localStorage</code> 的 <code>codeclab.prefs.v1</code>，清除浏览器站点数据即可抹掉。<b>密钥会以明文留在本机 localStorage</b>，公共电脑上请清空或使用后即删。</p>
+</div>
+
+<div id="toast"></div>
+
+<script>
+(function () {
+'use strict';
+
+/* ===================== 常量 ===================== */
+var TEXT_LIMIT = 200000;      // 输入字符上限
+var BYTES_MAX = 4 * 1024 * 1024;
+var OUT_LIMIT = 300000;       // 结果区显示上限
+var PREF_KEY = 'codeclab.prefs.v1';
+var TEXT_SAVE_MAX = 50000;
+var FILE_MAX = 4 * 1024 * 1024;
+
+var MODES = [
+  { id: 'base64',    cat: 'enc',  name: 'Base64' },
+  { id: 'base64url', cat: 'enc',  name: 'Base64URL' },
+  { id: 'url',       cat: 'enc',  name: 'URL' },
+  { id: 'hex',       cat: 'enc',  name: 'Hex' },
+  { id: 'unicode',   cat: 'enc',  name: '\\uXXXX' },
+  { id: 'entity',    cat: 'enc',  name: 'HTML 实体' },
+  { id: 'bytes',     cat: 'enc',  name: '字节解码' },
+  { id: 'hash',      cat: 'hash', name: '哈希' },
+  { id: 'hmac',      cat: 'hash', name: 'HMAC' },
+  { id: 'jwt',       cat: 'jwt',  name: 'JWT 解析' },
+  { id: 'random',    cat: 'rand', name: '随机串' }
+];
+var DIR_MODES = { base64: 1, base64url: 1, url: 1, hex: 1, unicode: 1, entity: 1 };
+
+var OPT_IDS = ['optWrap', 'optPad', 'optUrlStyle', 'optUrlPlus', 'optHexSep', 'optHexUpper',
+  'optUniScope', 'optUniUpper', 'optEntScope', 'optBytesFmt',
+  'optAlg', 'optOutFmt', 'optSrc', 'optAll',
+  'optHAlg', 'optHOut', 'optKey', 'optKeyFmt',
+  'optJwtKey', 'optJwtKeyFmt',
+  'optLen', 'optCount', 'optLow', 'optUp', 'optNum', 'optSym', 'optAmbig', 'optRndFmt'];
+
+var SNIFF_LABELS = ['utf-8', 'gb18030', 'gbk', 'big5', 'shift_jis', 'euc-kr', 'utf-16le', 'utf-16be', 'windows-1252', 'iso-8859-1'];
+
+var NAMED_ENT = {
+  amp: '&', lt: '<', gt: '>', quot: '"', apos: "'", nbsp: '\u00A0',
+  copy: '\u00A9', reg: '\u00AE', trade: '\u2122', deg: '\u00B0', plusmn: '\u00B1',
+  middot: '\u00B7', sect: '\u00A7', para: '\u00B6', times: '\u00D7', divide: '\u00F7',
+  laquo: '\u00AB', raquo: '\u00BB', euro: '\u20AC', pound: '\u00A3', yen: '\u00A5',
+  cent: '\u00A2', curren: '\u00A4', not: '\u00AC', macr: '\u00AF', micro: '\u00B5',
+  frac12: '\u00BD', frac14: '\u00BC', frac34: '\u00BE', sup2: '\u00B2', sup3: '\u00B3',
+  hellip: '\u2026', mdash: '\u2014', ndash: '\u2013', lsquo: '\u2018', rsquo: '\u2019',
+  ldquo: '\u201C', rdquo: '\u201D', bull: '\u2022', dagger: '\u2020', Dagger: '\u2021',
+  rarr: '\u2192', larr: '\u2190', harr: '\u2194', uarr: '\u2191', darr: '\u2193',
+  alpha: '\u03B1', beta: '\u03B2', gamma: '\u03B3', delta: '\u03B4', pi: '\u03C0',
+  sigma: '\u03C3', omega: '\u03C9', sum: '\u2211', infin: '\u221E', ne: '\u2260'
+};
+var ENT_ESC = { '&': '&amp;', '<': '&lt;', '>': '&gt;', '"': '&quot;', "'": '&#39;' };
+
+var SAMPLES = {
+  base64: '你好，世界 Hello · 2024\n第二行',
+  base64url: '你好，世界 ?a=1&b=2 >>',
+  url: 'https://example.com/搜索?q=中文 & 符号#片段',
+  hex: 'Hello, 世界',
+  unicode: '中文 abc \u00e9\u00e8',
+  entity: '<div class="box">a & b "quoted" — 中文</div>',
+  bytes: 'c4 e3 ba c3 a1 a2 20 47 42 4b ce f1',
+  hash: 'Hello, world',
+  hmac: 'Hi There',
+  jwt: 'eyJhbGciOiJIUzI1NiIsInR5cCI6IkpXVCJ9.eyJzdWIiOiIxMjM0NTY3ODkwIiwibm' +
+       'FtZSI6IkpvaG4gRG9lIiwiYWRtaW4iOnRydWUsImlhdCI6MTUxNjIzOTAyMiwiZXhwIjoxNTE2MjM5MDIyfQ' +
+       '.eG7e78epZZ04wZZfvfDxtYIYuxgl-31hUlJncsbblmE',
+  random: ''
+};
+var JWT_SAMPLE_KEY = 'your-256-bit-secret';
+
+/* ===================== DOM ===================== */
+function $(id) { return document.getElementById(id); }
+var ta = $('ta'), outEl = $('out'), errEl = $('err'), toastEl = $('toast');
+var modeBar = $('modeBar'), dirBtn = $('dirBtn'), optBar = $('optBar');
+var infoBox = $('infoBox'), outNote = $('outNote'), inNote = $('inNote');
+var helpPop = $('helpPop');
+
+/* ===================== 能力检测 ===================== */
+var HAS_SUBTLE = !!(window.crypto && window.crypto.subtle);
+var HAS_GBK = (function () { try { new TextDecoder('gbk'); return true; } catch (e) { return false; } })();
+var HAS_RND = !!(window.crypto && window.crypto.getRandomValues);
+$('capChip').innerHTML = 'WebCrypto <b>' + (HAS_SUBTLE ? '可用' : '不可用') + '</b> · ' +
+  'GBK 解码 <b>' + (HAS_GBK ? '可用' : '不可用') + '</b> · MD5 <b>内置</b>';
+
+/* ===================== 偏好 ===================== */
+var prefs = { cat: 'enc', mode: 'base64', dir: 'enc', tab: 'out', input: '' };
+
+function loadPrefs() {
+  try {
+    var raw = localStorage.getItem(PREF_KEY);
+    if (!raw) return;
+    var o = JSON.parse(raw);
+    if (!o || typeof o !== 'object') return;
+    if (typeof o.cat === 'string') prefs.cat = o.cat;
+    if (typeof o.mode === 'string' && modeOf(o.mode)) prefs.mode = o.mode;
+    if (o.dir === 'dec') prefs.dir = 'dec';
+    if (typeof o.tab === 'string') prefs.tab = o.tab;
+    if (typeof o.input === 'string') prefs.input = o.input;
+    if (o.opts && typeof o.opts === 'object') prefs.opts = o.opts;
+  } catch (e) { /* 存储不可用时静默降级 */ }
+}
+var saveTimer = 0;
+function savePrefs() {
+  clearTimeout(saveTimer);
+  saveTimer = setTimeout(function () {
+    try {
+      var o = { cat: prefs.cat, mode: prefs.mode, dir: prefs.dir, tab: prefs.tab, opts: readOptIds() };
+      if (ta.value.length <= TEXT_SAVE_MAX) o.input = ta.value;
+      localStorage.setItem(PREF_KEY, JSON.stringify(o));
+    } catch (e) { /* 配额超限忽略 */ }
+  }, 400);
+}
+function modeOf(id) {
+  for (var i = 0; i < MODES.length; i++) if (MODES[i].id === id) return MODES[i];
+  return null;
+}
+
+/* ===================== 选项条 ===================== */
+function readOptIds() {
+  var o = {};
+  for (var i = 0; i < OPT_IDS.length; i++) {
+    var el = $(OPT_IDS[i]);
+    if (!el) continue;
+    o[OPT_IDS[i]] = (el.type === 'checkbox') ? el.checked : el.value;
+  }
+  return o;
+}
+function applyOptIds(o) {
+  if (!o) return;
+  for (var i = 0; i < OPT_IDS.length; i++) {
+    var el = $(OPT_IDS[i]), v = o[OPT_IDS[i]];
+    if (!el || v === undefined || v === null) continue;
+    if (el.type === 'checkbox') el.checked = !!v; else el.value = v;
+  }
+}
+function syncOptBar() {
+  var gs = optBar.querySelectorAll('[data-modes]');
+  for (var i = 0; i < gs.length; i++) {
+    var list = gs[i].getAttribute('data-modes').split(',');
+    gs[i].style.display = list.indexOf(prefs.mode) >= 0 ? '' : 'none';
+  }
+}
+
+/* ===================== Toast / 错误条 ===================== */
+var toastTimer = 0;
+function toast(msg) {
+  toastEl.textContent = msg;
+  toastEl.classList.add('show');
+  clearTimeout(toastTimer);
+  toastTimer = setTimeout(function () { toastEl.classList.remove('show'); }, 1900);
+}
+function setErr(msg) {
+  if (!msg) { errEl.classList.remove('show'); errEl.textContent = ''; return; }
+  errEl.innerHTML = '<b>无法完成：</b>' + esc(String(msg));
+  errEl.classList.add('show');
+}
+function esc(s) {
+  return String(s).replace(/&/g, '&amp;').replace(/</g, '&lt;').replace(/>/g, '&gt;').replace(/"/g, '&quot;');
+}
+
+/* ===================== 字节 / 文本 ===================== */
+var ENC = new TextDecoder ? new TextEncoder() : null;
+function utf8(s) { return ENC.encode(s); }
+function utf8Decode(b) { return new TextDecoder('utf-8').decode(b); }
+
+var B64A = 'ABCDEFGHIJKLMNOPQRSTUVWXYZabcdefghijklmnopqrstuvwxyz0123456789+/';
+var B64M = (function () { var m = {}; for (var i = 0; i < 64; i++) m[B64A.charAt(i)] = i; return m; })();
+
+function bytesToB64(b, urlSafe) {
+  var A = urlSafe ? B64A.replace(/\+/g, '-').replace(/\//g, '_') : B64A;
+  var out = [], n = b.length, i;
+  for (i = 0; i + 2 < n; i += 3) {
+    var v = (b[i] << 16) | (b[i + 1] << 8) | b[i + 2];
+    out.push(A.charAt((v >>> 18) & 63), A.charAt((v >>> 12) & 63), A.charAt((v >>> 6) & 63), A.charAt(v & 63));
+  }
+  if (n - i === 1) { var v1 = b[i] << 16; out.push(A.charAt((v1 >>> 18) & 63), A.charAt((v1 >>> 12) & 63)); }
+  else if (n - i === 2) { var v2 = (b[i] << 16) | (b[i + 1] << 8); out.push(A.charAt((v2 >>> 18) & 63), A.charAt((v2 >>> 12) & 63), A.charAt((v2 >>> 6) & 63)); }
+  return out.join('');
+}
+function addPad(s) { var m = s.length % 4; return m ? s + '==='.slice(0, 4 - m) : s; }
+
+function b64ToBytes(s) {
+  var t = s.replace(/\s+/g, '').replace(/-/g, '+').replace(/_/g, '/');
+  var vals = [], bad = 0, badChars = '';
+  for (var i = 0; i < t.length; i++) {
+    var c = t.charAt(i);
+    if (c === '=') continue;
+    var v = B64M[c];
+    if (v === undefined) { bad++; if (badChars.indexOf(c) < 0) badChars += c; continue; }
+    vals.push(v);
+  }
+  var out = [], acc = 0, bits = 0;
+  for (i = 0; i < vals.length; i++) {
+    acc = (acc << 6) | vals[i]; bits += 6;
+    if (bits >= 8) { bits -= 8; out.push((acc >>> bits) & 255); }
+  }
+  return { bytes: new Uint8Array(out), bad: bad, badChars: badChars, dropped: vals.length % 4 };
+}
+
+var HEXM = (function () {
+  var m = {}, h = '0123456789';
+  for (var i = 0; i < 10; i++) m[h.charAt(i)] = i;
+  for (var c = 0; c < 6; c++) { m['abcdef'.charAt(c)] = 10 + c; m['ABCDEF'.charAt(c)] = 10 + c; }
+  return m;
+})();
+
+function bytesToHex(b, upper, sep) {
+  var s = [], D = upper ? '0123456789ABCDEF' : '0123456789abcdef';
+  for (var i = 0; i < b.length; i++) {
+    if (i && sep) s.push(sep);
+    s.push(D.charAt(b[i] >> 4), D.charAt(b[i] & 15));
+  }
+  return s.join('');
+}
+function hexToBytes(s) {
+  var t = s.replace(/0[xX]/g, '').replace(/[\s:,;\-]/g, '');
+  if (!t) return { bytes: new Uint8Array(0), bad: 0 };
+  if (t.length % 2) return { err: '去掉分隔符后剩 ' + t.length + ' 个字符，不是偶数，无法两两成字节' };
+  var out = [], bad = 0, badChars = '';
+  for (var i = 0; i < t.length; i += 2) {
+    var hi = HEXM[t.charAt(i)], lo = HEXM[t.charAt(i + 1)];
+    if (hi === undefined || lo === undefined) {
+      bad++;
+      if (hi === undefined && badChars.indexOf(t.charAt(i)) < 0) badChars += t.charAt(i);
+      if (lo === undefined && badChars.indexOf(t.charAt(i + 1)) < 0) badChars += t.charAt(i + 1);
+      continue;
+    }
+    out.push((hi << 4) | lo);
+  }
+  return { bytes: new Uint8Array(out), bad: bad, badChars: badChars };
+}
+
+/* 按当前字节来源解析输入 */
+function srcBytes(src, fmt) {
+  if (fmt === 'hex') {
+    var h = hexToBytes(src);
+    if (h.err) throw new Error('Hex 不完整：' + h.err);
+    return { bytes: h.bytes, note: h.bad ? '忽略了 ' + h.bad + ' 个非十六进制字符：' + h.badChars : '' };
+  }
+  if (fmt === 'b64') {
+    var b = b64ToBytes(src);
+    return { bytes: b.bytes, note: b.bad ? '忽略了 ' + b.bad + ' 个非 Base64 字符：' + b.badChars : (b.dropped ? '末尾有 ' + b.dropped + ' 个残余位被丢弃（长度不是 4 的倍数）' : '') };
+  }
+  return { bytes: utf8(src), note: '' };
+}
+
+/* ===================== MD5（内置实现） ===================== */
+function md5Rotl(x, c) { return (x << c) | (x >>> (32 - c)); }
+var MD5_S = [7, 12, 17, 22, 7, 12, 17, 22, 7, 12, 17, 22, 7, 12, 17, 22,
+             5, 9, 14, 20, 5, 9, 14, 20, 5, 9, 14, 20, 5, 9, 14, 20,
+             4, 11, 16, 23, 4, 11, 16, 23, 4, 11, 16, 23, 4, 11, 16, 23,
+             6, 10, 15, 21, 6, 10, 15, 21, 6, 10, 15, 21, 6, 10, 15, 21];
+var MD5_K = (function () {
+  var k = new Int32Array(64);
+  for (var i = 0; i < 64; i++) k[i] = Math.floor(Math.abs(Math.sin(i + 1)) * 4294967296);
+  return k;
+})();
+
+function md5Bytes(u8) {
+  var len = u8.length;
+  var total = (Math.ceil((len + 9) / 64)) * 64;
+  if (total === 0) total = 64;
+  var m = new Uint8Array(total);
+  m.set(u8);
+  m[len] = 0x80;
+  var dv = new DataView(m.buffer);
+  dv.setUint32(total - 8, (len << 3) >>> 0, true);
+  dv.setUint32(total - 4, Math.floor(len / 536870912), true);
+
+  var a0 = 0x67452301, b0 = 0xefcdab89, c0 = 0x98badcfe, d0 = 0x10325476;
+  var M = new Int32Array(16);
+  for (var off = 0; off < total; off += 64) {
+    for (var w = 0; w < 16; w++) M[w] = dv.getInt32(off + w * 4, true);
+    var A = a0, B = b0, C = c0, D = d0;
+    for (var i = 0; i < 64; i++) {
+      var F, g;
+      if (i < 16) { F = (B & C) | (~B & D); g = i; }
+      else if (i < 32) { F = (D & B) | (~D & C); g = (5 * i + 1) & 15; }
+      else if (i < 48) { F = B ^ C ^ D; g = (3 * i + 5) & 15; }
+      else { F = C ^ (B | ~D); g = (7 * i) & 15; }
+      F = (F + A + MD5_K[i] + M[g]) | 0;
+      A = D; D = C; C = B;
+      B = (B + md5Rotl(F, MD5_S[i])) | 0;
+    }
+    a0 = (a0 + A) | 0; b0 = (b0 + B) | 0; c0 = (c0 + C) | 0; d0 = (d0 + D) | 0;
+  }
+  function le(n) {
+    var s = '';
+    for (var j = 0; j < 4; j++) {
+      var byte = (n >>> (j * 8)) & 255;
+      s += (byte < 16 ? '0' : '') + byte.toString(16);
+    }
+    return s;
+  }
+  return le(a0) + le(b0) + le(c0) + le(d0);
+}
+
+/* ===================== 摘要 ===================== */
+function fmtDigest(bytes, fmt) {
+  if (fmt === 'hex') return bytesToHex(bytes, false, '');
+  if (fmt === 'b64u') return bytesToB64(bytes, true);
+  return bytesToB64(bytes, false);
+}
+function subtleDigest(alg, bytes) {
+  return window.crypto.subtle.digest(alg, bytes.buffer.slice(bytes.byteOffset, bytes.byteOffset + bytes.byteLength))
+    .then(function (buf) { return new Uint8Array(buf); });
+}
+function hmacBytes(alg, keyBytes, msgBytes) {
+  return window.crypto.subtle.importKey('raw', keyBytes, { name: 'HMAC', hash: { name: alg } }, false, ['sign'])
+    .then(function (k) { return window.crypto.subtle.sign('HMAC', k, msgBytes); })
+    .then(function (buf) { return new Uint8Array(buf); });
+}
+
+/* ===================== 编码模式实现 ===================== */
+function runBase64(src, enc, urlSafe) {
+  var notes = [];
+  if (enc) {
+    var b = utf8(src);
+    var s = bytesToB64(b, urlSafe);
+    if (!urlSafe && $('optWrap').checked) {
+      var lines = [];
+      for (var i = 0; i < s.length; i += 76) lines.push(s.slice(i, i + 76));
+      s = lines.join('\r\n');
+      notes.push('每 76 字符插入 CRLF，符合 MIME 传输格式');
+    }
+    if (urlSafe && $('optPad').value === 'yes') s = addPad(s);
+    return { out: s, notes: notes, meta: b.length + ' 字节 → ' + s.length + ' 字符' };
+  }
+  var r = b64ToBytes(src);
+  if (r.bad) notes.push('忽略了 ' + r.bad + ' 个非 Base64 字符：' + r.badChars);
+  if (r.dropped) notes.push('末尾 ' + r.dropped + ' 个 6 位组不足一字节，已丢弃');
+  var txt = utf8Decode(r.bytes);
+  var repl = countChar(txt, '\uFFFD');
+  if (repl) notes.push('解出的字节有 ' + repl + ' 处不是合法 UTF-8（显示为 \uFFFD）。若原文是 GBK 等编码，请改用「字节解码」模式');
+  return { out: txt, notes: notes, meta: src.length + ' 字符 → ' + r.bytes.length + ' 字节',
+    info: { kind: 'kv', rows: [
+      { label: '解出字节数', value: r.bytes.length + ' B' },
+      { label: '忽略字符数', value: String(r.bad) },
+      { label: 'U+FFFD 数量', value: String(repl) }
+    ] } };
+}
+
+function runUrl(src, enc) {
+  var notes = [];
+  if (enc) {
+    var style = $('optUrlStyle').value, s;
+    if (style === 'component') s = encodeURIComponent(src);
+    else if (style === 'uri') {
+      try { s = encodeURI(src); } catch (e) { throw new Error('encodeURI 失败：输入含孤立代理项（落单的一半 emoji）'); }
+    } else {
+      var b = utf8(src), KEEP = /[A-Za-z0-9\-_.~]/, arr = [];
+      for (var i = 0; i < b.length; i++) {
+        var ch = String.fromCharCode(b[i]);
+        arr.push(KEEP.test(ch) ? ch : ('%' + (b[i] < 16 ? '0' : '') + b[i].toString(16).toUpperCase()));
+      }
+      s = arr.join('');
+      notes.push('按 UTF-8 字节逐字节转义，只保留 unreserved 字符 A-Za-z0-9-_.~');
+    }
+    return { out: s, notes: notes, meta: src.length + ' 字符 → ' + s.length + ' 字符' };
+  }
+  var plus = $('optUrlPlus').checked;
+  var work = plus ? src.replace(/\+/g, '%20') : src;
+  var out, failed = 0;
+  try {
+    out = decodeURIComponent(work);
+  } catch (e) {
+    var re = /(?:%[0-9A-Fa-f]{2})+/g, last = 0, m, sb = [];
+    while ((m = re.exec(work))) {
+      if (m.index > last) sb.push(work.slice(last, m.index));
+      try { sb.push(decodeURIComponent(m[0])); } catch (e2) { sb.push(m[0]); failed++; }
+      last = m.index + m[0].length;
+    }
+    if (last < work.length) sb.push(work.slice(last));
+    out = sb.join('');
+    var stray = (out.match(/%/g) || []).length;
+    notes.push('存在非法百分号转义，已逐段尽力解码；' + (failed ? failed + ' 段转义后不是合法字符、' : '') +
+               stray + ' 个残缺的 % 原样保留');
+  }
+  if (plus) notes.push('已把 + 当作空格处理');
+  return { out: out, notes: notes, meta: src.length + ' 字符 → ' + out.length + ' 字符' };
+}
+
+function runHex(src, enc) {
+  var notes = [];
+  if (enc) {
+    var b = utf8(src);
+    var s = bytesToHex(b, $('optHexUpper').checked, $('optHexSep').value);
+    return { out: s, notes: notes, meta: src.length + ' 字符 → ' + b.length + ' 字节' };
+  }
+  var r = hexToBytes(src);
+  if (r.err) throw new Error('Hex 不完整：' + r.err);
+  if (r.bad) notes.push('忽略了 ' + r.bad + ' 个非十六进制字符：' + r.badChars);
+  var txt = utf8Decode(r.bytes);
+  var repl = countChar(txt, '\uFFFD');
+  if (repl) notes.push('有 ' + repl + ' 处不是合法 UTF-8，若原文是 GBK 请改用「字节解码」模式');
+  return { out: txt, notes: notes, meta: src.length + ' 字符 → ' + r.bytes.length + ' 字节',
+    info: { kind: 'kv', rows: [
+      { label: '解出字节数', value: r.bytes.length + ' B' },
+      { label: '忽略字符数', value: String(r.bad) },
+      { label: 'U+FFFD 数量', value: String(repl) }
+    ] } };
+}
+
+function runUnicode(src, enc) {
+  var notes = [];
+  if (enc) {
+    var all = $('optUniScope').value === 'all', upper = $('optUniUpper').checked;
+    var out = [], astral = 0;
+    for (var i = 0; i < src.length;) {
+      var cp = src.codePointAt(i), w = cp > 0xFFFF ? 2 : 1, raw = src.substr(i, w);
+      i += w;
+      var hex = cp.toString(16);
+      if (upper) hex = hex.toUpperCase();
+      var need = all || cp > 127 || (cp < 32) || cp === 92;
+      if (cp === 92) out.push('\\x5c');
+      else if (!need) out.push(raw);
+      else if (cp < 256) out.push('\\x' + (cp < 16 ? '0' : '') + hex);
+      else if (cp <= 0xFFFF) out.push('\\u' + ('0000' + hex).slice(-4));
+      else { out.push('\\u{' + hex + '}'); astral++; }
+    }
+    var s = out.join('');
+    if (all) notes.push('「所有字符」模式下 ASCII 也转义，反斜杠固定写作 \\x5c');
+    else notes.push('非 ASCII 走 \\uXXXX / \\u{…}，控制字符与反斜杠走 \\xXX');
+    if (astral) notes.push('有 ' + astral + ' 个 BMP 外字符（emoji 等）转成了 \\u{…}，JS 的 JSON 与多数语言不认识，需 ES6 环境');
+    return { out: s, notes: notes, meta: src.length + ' 字符 → ' + s.length + ' 字符' };
+  }
+  var res = '', i2 = 0, bad = 0;
+  while (i2 < src.length) {
+    var ch = src.charAt(i2);
+    if (ch === '\\' && i2 + 1 < src.length) {
+      var t = src.charAt(i2 + 1);
+      if (t === 'x' && /^[0-9A-Fa-f]{2}/.test(src.substr(i2 + 2, 2))) {
+        res += String.fromCharCode(parseInt(src.substr(i2 + 2, 2), 16)); i2 += 4; continue;
+      }
+      if (t === 'u') {
+        var mBrace = /^\{([0-9A-Fa-f]{1,6})\}/.exec(src.substr(i2 + 2));
+        if (mBrace) {
+          var cp = parseInt(mBrace[1], 16);
+          if (cp > 0x10FFFF) { bad++; res += src.substr(i2, mBrace[0].length + 2); }
+          else res += String.fromCodePoint(cp);
+          i2 += mBrace[0].length + 2; continue;
+        }
+        var m4 = /^([0-9A-Fa-f]{4})/.exec(src.substr(i2 + 2, 4));
+        if (m4) { res += String.fromCharCode(parseInt(m4[1], 16)); i2 += 6; continue; }
+      }
+      if (t === 'n') { res += '\n'; i2 += 2; continue; }
+      if (t === 'r') { res += '\r'; i2 += 2; continue; }
+      if (t === 't') { res += '\t'; i2 += 2; continue; }
+      bad++;
+    }
+    res += ch; i2++;
+  }
+  if (bad) notes.push('有 ' + bad + ' 处无法识别的转义序列，已原样保留');
+  return { out: res, notes: notes, meta: src.length + ' 字符 → ' + res.length + ' 字符' };
+}
+
+function runEntity(src, enc) {
+  var notes = [];
+  if (enc) {
+    var all = $('optEntScope').value === 'all', out = [];
+    for (var i = 0; i < src.length; i++) {
+      var c = src.charAt(i), code = src.charCodeAt(i);
+      if (ENT_ESC[c]) out.push(ENT_ESC[c]);
+      else if (all && code > 127) out.push('&#x' + code.toString(16).toUpperCase() + ';');
+      else out.push(c);
+    }
+    var s = out.join('');
+    if (all) notes.push('非 ASCII 逐个转成十进制以外的十六进制数字实体 &#xHH;，代理对会被拆成两个实体');
+    return { out: s, notes: notes, meta: src.length + ' 字符 → ' + s.length + ' 字符' };
+  }
+  var namedMiss = Object.create(null), lost = 0, surrog = 0;
+  var res = src.replace(/&(#[0-9]+|#[xX][0-9A-Fa-f]+|[A-Za-z][A-Za-z0-9]*);/g, function (whole, body) {
+    if (body.charAt(0) === '#') {
+      var cp = body.charAt(1) === 'x' || body.charAt(1) === 'X'
+        ? parseInt(body.slice(2), 16) : parseInt(body.slice(1), 10);
+      if (!(cp >= 0) || cp > 0x10FFFF) { lost++; return whole; }
+      if (cp >= 0xD800 && cp <= 0xDFFF) { surrog++; return '\uFFFD'; }
+      return String.fromCodePoint(cp);
+    }
+    if (Object.prototype.hasOwnProperty.call(NAMED_ENT, body)) return NAMED_ENT[body];
+    namedMiss[body] = 1;
+    return whole;
+  });
+  var miss = Object.keys(namedMiss);
+  if (miss.length) notes.push('未识别的命名实体已原样保留：&' + miss.slice(0, 12).join('; &') + (miss.length > 12 ? ' …共 ' + miss.length + ' 种' : '') + '。本工具只内置 ' + Object.keys(NAMED_ENT).length + ' 个命名实体');
+  if (lost) notes.push('有 ' + lost + ' 处数字实体超出 U+10FFFF 范围，原样保留');
+  if (surrog) notes.push('有 ' + surrog + ' 处数字实体落在代理区 D800-DFFF，按 HTML 规范替换为 U+FFFD');
+  return { out: res, notes: notes, meta: src.length + ' 字符 → ' + res.length + ' 字符' };
+}
+
+var SNIFF_NAMES = {
+  'utf-8': 'UTF-8', 'gb18030': 'GB18030', 'gbk': 'GBK', 'big5': 'Big5',
+  'shift_jis': 'Shift_JIS', 'euc-kr': 'EUC-KR', 'utf-16le': 'UTF-16LE',
+  'utf-16be': 'UTF-16BE', 'windows-1252': 'Windows-1252', 'iso-8859-1': 'ISO-8859-1'
+};
+function runBytes(src) {
+  var fmt = $('optBytesFmt').value, notes = [], bytes, bad = 0;
+  if (fmt === 'auto') {
+    var clean = src.replace(/0[xX]/g, '').replace(/[\s:,;\-]/g, '');
+    var isHex = clean.length >= 2 && /^[0-9A-Fa-f]+$/.test(clean) && clean.length % 2 === 0;
+    if (isHex) { bytes = hexToBytes(src).bytes; notes.push('自动识别为 Hex 输入'); }
+    else { var r = b64ToBytes(src); bytes = r.bytes; bad = r.bad; notes.push('自动识别为 Base64 输入'); }
+  } else if (fmt === 'hex') {
+    var h = hexToBytes(src);
+    if (h.err) throw new Error('Hex 不完整：' + h.err);
+    bytes = h.bytes; bad = h.bad;
+  } else {
+    var b = b64ToBytes(src); bytes = b.bytes; bad = b.dropped || b.bad;
+  }
+  if (bad) notes.push('输入有 ' + bad + ' 个字符不符合所选格式，已忽略');
+  if (!bytes.length) throw new Error('没有解析出任何字节');
+  if (bytes.length > BYTES_MAX) throw new Error('字节数 ' + bytes.length + ' 超过上限 ' + BYTES_MAX);
+
+  var rows = [];
+  for (var i = 0; i < SNIFF_LABELS.length; i++) {
+    var label = SNIFF_LABELS[i], text = null, err = '';
+    try { text = new TextDecoder(label).decode(bytes); }
+    catch (e) { err = e.name === 'TypeError' ? '浏览器不支持该编码' : e.message; }
+    if (text === null) { rows.push({ label: label, err: err, score: 1e9 }); continue; }
+    var repl = countChar(text, '\uFFFD'), ctrl = 0, printable = 0;
+    for (var j = 0; j < text.length; j++) {
+      var c = text.charCodeAt(j);
+      if (c === 9 || c === 10 || c === 13) { printable++; continue; }
+      if (c < 32 || (c >= 127 && c < 160)) ctrl++;
+      else printable++;
+    }
+    rows.push({ label: label, text: text, repl: repl, ctrl: ctrl, printable: printable,
+      score: repl * 4 + ctrl, len: text.length });
+  }
+  var ranked = rows.slice().sort(function (a, b2) { return a.score - b2.score; });
+  var best = ranked[0];
+  var outLines = rows.filter(function (r) { return !r.err; }).map(function (r) {
+    return padRight(SNIFF_NAMES[r.label] || r.label, 14) + ' U+FFFD ' + padLeft(String(r.repl), 4) +
+           '  控制符 ' + padLeft(String(r.ctrl), 4) + '\n' + r.text;
+  });
+  var info = rows.map(function (r) {
+    return { label: SNIFF_NAMES[r.label] || r.label, err: r.err, repl: r.repl, ctrl: r.ctrl,
+      printable: r.printable, text: r.text, score: r.score, pick: r === best && best.score < 1e9 };
+  });
+  notes.push('共解码 ' + bytes.length + ' 字节，' + info.filter(function (r) { return !r.err; }).length + ' 种编码可用');
+  return {
+    out: outLines.join('\n\n'), notes: notes,
+    meta: bytes.length + ' 字节 → ' + (best.err ? '全部失败' : '最佳候选 ' + (SNIFF_NAMES[best.label] || best.label)),
+    info: { kind: 'sniff', rows: info }
+  };
+}
+function padRight(s, n) { while (s.length < n) s += ' '; return s; }
+function padLeft(s, n) { while (s.length < n) s = ' ' + s; return s; }
+function countChar(s, ch) { var n = 0, i = -1; while ((i = s.indexOf(ch, i + 1)) >= 0) n++; return n; }
+
+/* ===================== 摘要模式（异步） ===================== */
+function runHash(src) {
+  var sb = srcBytes(src, $('optSrc').value);
+  if (sb.note) return Promise.resolve({ out: '', notes: [], err: sb.note, info: null });
+  if (sb.bytes.length > BYTES_MAX) return Promise.resolve({ out: '', notes: [], err: '字节数 ' + sb.bytes.length + ' 超过上限 ' + BYTES_MAX, info: null });
+  var fmt = $('optOutFmt').value, all = $('optAll').checked;
+  var alg = $('optAlg').value;
+  var list = all ? ['MD5', 'SHA-1', 'SHA-256', 'SHA-384', 'SHA-512'] : [alg];
+  var jobs = list.map(function (a) {
+    if (a === 'MD5') return Promise.resolve(fmtDigestStr(md5Bytes(sb.bytes), fmt));
+    if (!HAS_SUBTLE) return Promise.resolve(a + '  需要安全上下文（Web Crypto 不可用）');
+    return subtleDigest(a, sb.bytes).then(function (b) { return fmtDigest(b, fmt); },
+      function (e) { return a + '  失败：' + e.message; });
+  });
+  return Promise.all(jobs).then(function (vals) {
+    var lines = list.map(function (a, i) { return padRight(a, 10) + (all ? '= ' : '') + vals[i]; });
+    var info = list.map(function (a, i) { return { label: a, value: vals[i] }; });
+    return {
+      out: all ? lines.join('\n') : vals[0],
+      notes: sb.note ? [sb.note] : [],
+      meta: (all ? list.length + ' 个算法' : alg) + ' · 输入 ' + sb.bytes.length + ' 字节',
+      info: { kind: 'digest', rows: info, bytes: sb.bytes.length, fmt: fmt }
+    };
+  });
+}
+function fmtDigestStr(hex, fmt) {
+  if (fmt === 'hex') return hex;
+  var b = new Uint8Array(hex.length / 2);
+  for (var i = 0; i < b.length; i++) b[i] = parseInt(hex.substr(i * 2, 2), 16);
+  return fmtDigest(b, fmt);
+}
+
+function runHmac(src) {
+  if (!HAS_SUBTLE) return Promise.resolve({ out: '', notes: [], err: '当前环境 Web Crypto 不可用（非安全上下文），HMAC 无法计算', info: null });
+  var keyIn = $('optKey').value;
+  if (!keyIn) return Promise.resolve({ out: '', notes: [], err: '请填写密钥', info: null });
+  var kb;
+  try { kb = srcBytes(keyIn, $('optKeyFmt').value); }
+  catch (e) { return Promise.resolve({ out: '', notes: [], err: '密钥解析失败：' + e.message, info: null }); }
+  if (kb.note) return Promise.resolve({ out: '', notes: [], err: '密钥解析：' + kb.note, info: null });
+  var mb = srcBytes(src, 'text');
+  var alg = $('optHAlg').value;
+  return hmacBytes(alg, kb.bytes, mb.bytes).then(function (b) {
+    var s = fmtDigest(b, $('optHOut').value);
+    return {
+      out: s, notes: [],
+      meta: alg + ' · 消息 ' + mb.bytes.length + ' 字节 · 密钥 ' + kb.bytes.length + ' 字节',
+      info: { kind: 'digest', rows: [{ label: alg, value: s }], bytes: mb.bytes.length, fmt: $('optHOut').value, keyLen: kb.bytes.length }
+    };
+  }, function (e) {
+    return { out: '', notes: [], err: e.name + ': ' + e.message, info: null };
+  });
+}
+
+/* ===================== JWT ===================== */
+var B64URL_RE = /^[A-Za-z0-9_\-]+$/;
+var HS_TO_SHA = { HS256: 'SHA-256', HS384: 'SHA-384', HS512: 'SHA-512' };
+function runJwt(src) {
+  var notes = [];
+  var tok = src.replace(/^\s*Bearer\s+/i, '').replace(/\s+/g, '');
+  if (/\s/.test(src)) notes.push('已去除 token 中的空白与换行');
+  if (/^Bearer\s/i.test(src)) notes.push('已去掉 Bearer 前缀');
+  var parts = tok.split('.');
+  if (parts.length < 2) throw new Error('JWT 应为 header.payload.signature 三段，当前只有 ' + parts.length + ' 段');
+  if (parts.length > 3) throw new Error('段数超过 3，请检查是否多粘贴了内容');
+  for (var i = 0; i < 2; i++) {
+    if (!B64URL_RE.test(parts[i])) throw new Error((i ? 'payload' : 'header') + ' 段含 Base64URL 之外的字符：' + parts[i].slice(0, 24));
+  }
+  function seg(s) { return utf8Decode(b64ToBytes(s).bytes); }
+  var header, payload;
+  try { header = JSON.parse(seg(parts[0])); }
+  catch (e) { throw new Error('header 不是合法 JSON：' + e.message); }
+  try { payload = JSON.parse(seg(parts[1])); }
+  catch (e) { throw new Error('payload 不是合法 JSON：' + e.message); }
+
+  var out = JSON.stringify({ header: header, payload: payload }, null, 2);
+  var rows = [];
+  Object.keys(header).forEach(function (k) {
+    rows.push({ label: 'header.' + k, value: typeof header[k] === 'object' ? JSON.stringify(header[k]) : String(header[k]) });
+  });
+  var now = Math.floor(Date.now() / 1000);
+  Object.keys(payload).forEach(function (k) {
+    var v = payload[k], extra = '';
+    if ((k === 'exp' || k === 'iat' || k === 'nbf') && typeof v === 'number') {
+      var d = new Date(v * 1000);
+      extra = '  ' + d.toLocaleString();
+      if (k === 'exp') extra += now > v ? '  · 已过期 ' + humanSpan(now - v) : '  · 剩余 ' + humanSpan(v - now);
+      if (k === 'nbf') extra += now < v ? '  · ' + humanSpan(v - now) + ' 后才生效' : '  · 已生效';
+      if (k === 'iat') extra += '  · ' + humanSpan(Math.abs(now - v)) + (v > now ? ' 后' : '前');
+    }
+    rows.push({ label: 'payload.' + k, value: (typeof v === 'object' ? JSON.stringify(v) : String(v)) + extra,
+      cls: (k === 'exp' && typeof v === 'number' && now > v) ? 'bad' : '' });
+  });
+
+  var alg = String(header.alg || '').toUpperCase();
+  var verify = null;
+  var keyStr = $('optJwtKey').value;
+  if (parts.length < 3 || !parts[2]) {
+    verify = { ok: null, text: 'token 没有签名段，无法验签' };
+  } else if (/^HS(256|384|512)$/.test(alg)) {
+    if (!HAS_SUBTLE) verify = { ok: null, text: 'Web Crypto 不可用，无法验签' };
+    else if (!keyStr) verify = { ok: null, text: '未填密钥，未验签' };
+    else {
+      var kb;
+      try { kb = srcBytes(keyStr, $('optJwtKeyFmt').value); }
+      catch (e) { return { out: out, notes: notes, err: '密钥解析失败：' + e.message, info: { kind: 'kv', rows: rows } }; }
+      var signingInput = utf8(parts[0] + '.' + parts[1]);
+      return hmacBytes(HS_TO_SHA[alg], kb.bytes, signingInput).then(function (b) {
+        var expect = bytesToB64(b, true).replace(/=+$/, '');
+        var ok = constantTimeEq(expect, parts[2]);
+        return {
+          out: out, notes: notes,
+          meta: alg + ' · ' + (ok ? '签名校验通过' : '签名校验失败'),
+          metaCls: ok ? 'good' : 'bad',
+          info: { kind: 'kv', rows: rows.concat([{ label: '验签', value: ok ? '通过：用给定密钥重算的签名与 token 一致' : '不通过：签名不匹配（密钥不对或内容被改）', cls: ok ? 'good' : 'bad' }]) }
+        };
+      }, function (e) {
+        return { out: out, notes: notes, err: '验签失败：' + e.message, info: { kind: 'kv', rows: rows } };
+      });
+    }
+  } else if (alg === 'NONE' || alg === '') {
+    verify = { ok: false, text: 'alg=none，无签名保护，任何内容都可伪造' };
+  } else {
+    verify = { ok: null, text: alg + ' 属于非对称算法，需要导入公钥，本工具只解析不验签' };
+  }
+  if (verify) {
+    rows.push({ label: '验签', value: verify.text, cls: verify.ok === false ? 'bad' : 'dim' });
+    if (verify.ok === false) notes.push('该 token 没有可用的签名保护');
+  }
+  return {
+    out: out, notes: notes,
+    meta: (alg || '无 alg') + ' · payload ' + Object.keys(payload).length + ' 个字段' + (verify && verify.ok === true ? ' · 验签通过' : ''),
+    metaCls: verify && verify.ok === true ? 'good' : (verify && verify.ok === false ? 'bad' : ''),
+    info: { kind: 'kv', rows: rows }
+  };
+}
+function humanSpan(sec) {
+  if (sec < 60) return sec + ' 秒';
+  if (sec < 3600) return Math.round(sec / 60) + ' 分钟';
+  if (sec < 86400) return (sec / 3600).toFixed(1) + ' 小时';
+  return (sec / 86400).toFixed(1) + ' 天';
+}
+function constantTimeEq(a, b) {
+  if (a.length !== b.length) return false;
+  var diff = 0;
+  for (var i = 0; i < a.length; i++) diff |= a.charCodeAt(i) ^ b.charCodeAt(i);
+  return diff === 0;
+}
+
+/* ===================== 随机 ===================== */
+var SET_LOW = 'abcdefghijklmnopqrstuvwxyz', SET_UP = 'ABCDEFGHIJKLMNOPQRSTUVWXYZ',
+    SET_NUM = '0123456789', SET_SYM = '!@#$%^&*()-_=+[]{};:,.?/',
+    AMBIG = 'iIlLoO01';
+function randInt(n) {
+  var lim = Math.floor(256 / n) * n, x = new Uint8Array(1);
+  do { crypto.getRandomValues(x); } while (x[0] >= lim);
+  return x[0] % n;
+}
+function runRandom() {
+  if (!HAS_RND) return { out: '', notes: [], err: '当前浏览器没有 crypto.getRandomValues，无法生成随机串', info: null };
+  var len = clampInt($('optLen').value, 4, 128), count = clampInt($('optCount').value, 1, 200);
+  var pool = '';
+  if ($('optLow').checked) pool += SET_LOW;
+  if ($('optUp').checked) pool += SET_UP;
+  if ($('optNum').checked) pool += SET_NUM;
+  if ($('optSym').checked) pool += SET_SYM;
+  if ($('optAmbig').checked) {
+    var p = '';
+    for (var i = 0; i < pool.length; i++) if (AMBIG.indexOf(pool.charAt(i)) < 0) p += pool.charAt(i);
+    pool = p;
+  }
+  if (!pool) return { out: '', notes: [], err: '至少勾选一种字符集', info: null };
+
+  var items = [], forced = [];
+  if ($('optUp').checked) forced.push(SET_UP.charAt(randInt(26)));
+  if ($('optLow').checked) forced.push(SET_LOW.charAt(randInt(26)));
+  if ($('optNum').checked) forced.push(SET_NUM.charAt(randInt(10)));
+
+  for (var c = 0; c < count; c++) {
+    var arr = [];
+    for (var j = 0; j < len; j++) arr.push(pool.charAt(randInt(pool.length)));
+    for (var f = 0; f < forced.length && f < len; f++) {
+      if (pool.indexOf(forced[f]) < 0) continue;
+      var pos = randInt(len);
+      arr[pos] = forced[f];
+    }
+    items.push(arr.join(''));
+  }
+  var fmt = $('optRndFmt').value, out;
+  if (fmt === 'json') out = JSON.stringify(items, null, 2);
+  else if (fmt === 'js') out = items.map(function (s) { return "'" + s + "'"; }).join(',\n');
+  else out = items.join('\n');
+  return {
+    out: out, notes: ['取值用拒绝采样保证均匀，不做「至少含一位数字」之外的额外约束'],
+    meta: count + ' 条 × ' + len + ' 字符 · 字符池 ' + pool.length + ' 个',
+    info: { kind: 'kv', rows: [{ label: '字符池', value: pool }, { label: '长度', value: String(len) }, { label: '条数', value: String(count) }] }
+  };
+}
+function runUuid() {
+  if (!HAS_RND) return { out: '', notes: [], err: '当前浏览器没有 crypto.getRandomValues', info: null };
+  var list = [];
+  var count = clampInt($('optCount').value, 1, 200);
+  for (var i = 0; i < count; i++) {
+    if (window.crypto.randomUUID) { list.push(crypto.randomUUID()); continue; }
+    var b = new Uint8Array(16);
+    crypto.getRandomValues(b);
+    b[6] = (b[6] & 0x0f) | 0x40;
+    b[8] = (b[8] & 0x3f) | 0x80;
+    var h = bytesToHex(b, false, '');
+    list.push(h.slice(0, 8) + '-' + h.slice(8, 12) + '-' + h.slice(12, 16) + '-' + h.slice(16, 20) + '-' + h.slice(20));
+  }
+  var fmt = $('optRndFmt').value;
+  return {
+    out: fmt === 'json' ? JSON.stringify(list, null, 2) : (fmt === 'js' ? list.map(function (s) { return "'" + s + "'"; }).join(',\n') : list.join('\n')),
+    notes: [], meta: list.length + ' 个 UUID v4 · ' + (window.crypto.randomUUID ? 'crypto.randomUUID' : 'getRandomValues 手工置位'),
+    info: null
+  };
+}
+function clampInt(v, lo, hi) {
+  var n = parseInt(v, 10);
+  if (isNaN(n)) n = lo;
+  return Math.min(hi, Math.max(lo, n));
+}
+
+/* ===================== 渲染 ===================== */
+var seq = 0;
+var lastOut = '';
+var lastResult = null;
+
+function recompute() {
+  var my = ++seq;
+  var src = ta.value;
+  var mode = prefs.mode;
+
+  $('inCount').textContent = mode === 'random' ? '本模式不使用输入'
+    : src.length + ' 字符' + (mode === 'entity' || mode === 'unicode' || mode === 'url' ? '' : ' / ' + utf8(src).length + ' 字节');
+
+  if (src.length > TEXT_LIMIT) {
+    setErr('输入 ' + src.length + ' 字符，超过上限 ' + TEXT_LIMIT + ' 字符。请截断后再处理');
+    render({ out: '', notes: [], info: null, meta: '' });
+    return;
+  }
+  if (mode !== 'random' && mode !== 'hash' && !src) {
+    setErr(null);
+    render({ out: '', notes: [], info: null, meta: '等待输入' });
+    return;
+  }
+
+  var res;
+  try {
+    res = dispatch(mode, src);
+  } catch (e) {
+    setErr(e && e.message ? e.message : String(e));
+    render({ out: '', notes: [], info: null, meta: '' });
+    return;
+  }
+  if (res && typeof res.then === 'function') {
+    $('stMain').textContent = '计算中…';
+    res.then(function (r) { if (my === seq) finish(r); },
+             function (e) { if (my === seq) { setErr(e && e.message ? e.message : String(e)); render({ out: '', notes: [], info: null, meta: '' }); } });
+    return;
+  }
+  finish(res);
+}
+
+function dispatch(mode, src) {
+  var enc = prefs.dir === 'enc';
+  switch (mode) {
+    case 'base64': return runBase64(src, enc, false);
+    case 'base64url': return runBase64(src, enc, true);
+    case 'url': return runUrl(src, enc);
+    case 'hex': return runHex(src, enc);
+    case 'unicode': return runUnicode(src, enc);
+    case 'entity': return runEntity(src, enc);
+    case 'bytes': return runBytes(src);
+    case 'hash': return runHash(src);
+    case 'hmac': return runHmac(src);
+    case 'jwt': return runJwt(src);
+    case 'random': return runRandom();
+  }
+  return { out: '', notes: [], info: null, meta: '' };
+}
+
+function finish(res) {
+  if (res && res.err) {
+    setErr(res.err);
+    render({ out: '', notes: [], info: null, meta: '' });
+    return;
+  }
+  setErr(null);
+  render(res);
+}
+
+function render(res) {
+  lastResult = res;
+  lastOut = res.out || '';
+  var truncated = lastOut.length > OUT_LIMIT;
+  outEl.value = truncated ? lastOut.slice(0, OUT_LIMIT) : lastOut;
+
+  var notes = (res.notes || []).slice();
+  if (truncated) notes.push('结果共 ' + lastOut.length + ' 字符，此处只显示前 ' + OUT_LIMIT + ' 字符；复制与下载仍是完整内容');
+  if (notes.length) { outNote.style.display = ''; outNote.textContent = notes.join('\n'); }
+  else { outNote.style.display = 'none'; outNote.textContent = ''; }
+
+  renderInfo(res.info);
+
+  var m = modeOf(prefs.mode);
+  $('stMode').innerHTML = '<b>' + esc(m ? m.name : prefs.mode) + '</b>' +
+    (DIR_MODES[prefs.mode] ? ' · ' + (prefs.dir === 'enc' ? '编码方向' : '解码方向') : '');
+  var meta = res.meta || '';
+  $('stMain').innerHTML = (res.metaCls === 'good' ? '<span class="good">' : res.metaCls === 'bad' ? '<span class="bad">' : '<span>') +
+    esc(meta) + '</span>';
+  $('outCount').textContent = lastOut ? lastOut.length + ' 字符' : '';
+}
+
+function renderInfo(info) {
+  var empty = '<div class="empty">当前模式没有附加信息</div>';
+  if (!info || !info.rows || !info.rows.length) {
+    infoBox.innerHTML = empty;
+    $('infoCount').textContent = '';
+    return;
+  }
+  var rows = info.rows, h = '<table><thead><tr>', i;
+  if (info.kind === 'sniff') {
+    h += '<th>编码</th><th>U+FFFD</th><th>控制符</th><th>可打印</th><th>解码结果（前 120 字）</th></tr></thead><tbody>';
+    var order = rows.slice().sort(function (a, b) { return a.score - b.score; });
+    for (i = 0; i < order.length; i++) {
+      var r = order[i];
+      if (r.err) { h += '<tr><td class="k">' + esc(r.label) + '</td><td class="dim" colspan="4">' + esc(r.err) + '</td></tr>'; continue; }
+      h += '<tr' + (r.pick ? ' class="pick"' : '') + '><td class="k">' + esc(r.label) + '</td>' +
+           '<td class="n">' + r.repl + '</td><td class="n">' + r.ctrl + '</td><td class="n">' + r.printable + '</td>' +
+           '<td class="v">' + esc(r.text.replace(/[\r\n\t]/g, '\u00B7').slice(0, 120)) + '</td></tr>';
+    }
+  } else if (info.kind === 'digest') {
+    h += '<th>项</th><th>值</th><th>长度</th></tr></thead><tbody>';
+    for (i = 0; i < rows.length; i++) {
+      h += '<tr><td class="k">' + esc(rows[i].label) + '</td><td class="v">' + esc(rows[i].value) +
+           '</td><td class="n">' + rows[i].value.length + '</td></tr>';
+    }
+  } else {
+    h += '<th>字段</th><th>值</th></tr></thead><tbody>';
+    for (i = 0; i < rows.length; i++) {
+      h += '<tr><td class="k">' + esc(rows[i].label) + '</td><td class="v' + (rows[i].cls ? ' ' + rows[i].cls : '') +
+           '">' + esc(rows[i].value) + '</td></tr>';
+    }
+  }
+  h += '</tbody></table>';
+  infoBox.innerHTML = h;
+  $('infoCount').textContent = '(' + rows.length + ')';
+}
+
+/* ===================== 复制 / 下载 ===================== */
+function copyText(txt, okMsg) {
+  if (!txt) { toast('没有可复制的内容'); return; }
+  if (navigator.clipboard && navigator.clipboard.writeText) {
+    navigator.clipboard.writeText(txt).then(function () { toast(okMsg); }, function () { fallbackCopy(txt, okMsg); });
+  } else fallbackCopy(txt, okMsg);
+}
+function fallbackCopy(txt, okMsg) {
+  var t = document.createElement('textarea');
+  t.value = txt; t.style.position = 'fixed'; t.style.opacity = '0';
+  document.body.appendChild(t); t.select();
+  var done = false;
+  try { done = document.execCommand('copy'); } catch (e) { done = false; }
+  document.body.removeChild(t);
+  toast(done ? okMsg : '复制失败，请手动选中');
+}
+$('copyBtn').addEventListener('click', function () { copyText(lastOut, '结果已复制'); });
+$('dlBtn').addEventListener('click', function () {
+  if (!lastOut) { toast('没有可下载的内容'); return; }
+  var d = new Date(), p = function (n) { return (n < 10 ? '0' : '') + n; };
+  var m = modeOf(prefs.mode);
+  var name = (m ? m.name.replace(/[^\w\u4e00-\u9fa5-]/g, '') : '结果') + '_' +
+             d.getFullYear() + p(d.getMonth() + 1) + p(d.getDate()) + '-' + p(d.getHours()) + p(d.getMinutes()) + p(d.getSeconds()) + '.txt';
+  var blob = new Blob(['\uFEFF' + lastOut], { type: 'text/plain;charset=utf-8' });
+  var a = document.createElement('a');
+  a.href = URL.createObjectURL(blob); a.download = name;
+  document.body.appendChild(a); a.click();
+  setTimeout(function () { URL.revokeObjectURL(a.href); document.body.removeChild(a); }, 0);
+  toast('已下载 ' + name);
+});
+$('swapBtn').addEventListener('click', function () {
+  if (!lastOut) { toast('当前没有结果'); return; }
+  ta.value = lastOut;
+  savePrefs();
+  recompute();
+  toast('结果已填入输入框');
+});
+$('sampleBtn').addEventListener('click', function () {
+  var m = modeOf(prefs.mode);
+  if (prefs.mode === 'random') { recompute(); toast('已重新生成'); return; }
+  if (DIR_MODES[prefs.mode]) prefs.dir = 'enc';
+  syncDir();
+  ta.value = SAMPLES[prefs.mode] || '';
+  if (prefs.mode === 'jwt') $('optJwtKey').value = JWT_SAMPLE_KEY;
+  // HMAC 示例用 RFC 4231 Test Case 1 的密钥，结果可与官方向量直接对照
+  if (prefs.mode === 'hmac') {
+    $('optKey').value = '0b0b0b0b0b0b0b0b0b0b0b0b0b0b0b0b0b0b0b0b';
+    $('optKeyFmt').value = 'hex';
+    $('optHAlg').value = 'SHA-256';
+  }
+  savePrefs();
+  recompute();
+  toast('已填入' + (m ? m.name : '') + '示例');
+});
+$('uuidBtn').addEventListener('click', function () { finish(runUuid()); savePrefs(); });
+
+/* ===================== 模式 / 方向 / 标签 ===================== */
+function buildModeBar() {
+  modeBar.innerHTML = '';
+  MODES.filter(function (m) { return m.cat === prefs.cat; }).forEach(function (m) {
+    var b = document.createElement('button');
+    b.className = 'modebtn' + (m.id === prefs.mode ? ' on' : '');
+    b.textContent = m.name;
+    b.setAttribute('data-mode', m.id);
+    b.addEventListener('click', function () { setMode(m.id); });
+    modeBar.appendChild(b);
+  });
+  var cur = modeOf(prefs.mode);
+  if (!cur || cur.cat !== prefs.cat) {
+    var first = MODES.filter(function (m) { return m.cat === prefs.cat; })[0];
+    if (first) prefs.mode = first.id;
+    buildModeBar();
+    return;
+  }
+}
+function setMode(id) {
+  var m = modeOf(id);
+  if (!m) return;
+  prefs.mode = id;
+  prefs.cat = m.cat;
+  buildModeBar();
+  syncCat();
+  syncDir();
+  syncOptBar();
+  syncInputEnabled();
+  savePrefs();
+  recompute();
+}
+function syncCat() {
+  var bs = document.querySelectorAll('#catBar .catbtn');
+  for (var i = 0; i < bs.length; i++) bs[i].classList.toggle('on', bs[i].getAttribute('data-cat') === prefs.cat);
+}
+function syncDir() {
+  if (DIR_MODES[prefs.mode]) {
+    dirBtn.style.display = '';
+    dirBtn.textContent = prefs.dir === 'enc' ? '→ 编码' : '← 解码';
+    dirBtn.classList.toggle('on', prefs.dir === 'enc');
+  } else dirBtn.style.display = 'none';
+  $('swapBtn').style.display = DIR_MODES[prefs.mode] ? '' : 'none';
+}
+function syncInputEnabled() {
+  var rand = prefs.mode === 'random';
+  ta.disabled = rand;
+  if (rand) {
+    inNote.style.display = '';
+    inNote.textContent = '随机模式不读输入，直接改上方参数即可。字符池至少勾一项，取值用 crypto.getRandomValues 的拒绝采样，均匀无偏。';
+    ta.placeholder = '';
+  } else {
+    inNote.style.display = 'none';
+    ta.placeholder = '把内容粘贴到这里，也可以直接把 .txt 文件拖到页面上';
+  }
+}
+function setCat(cat) {
+  prefs.cat = cat;
+  var first = MODES.filter(function (m) { return m.cat === cat; })[0];
+  if (first) prefs.mode = first.id;
+  buildModeBar();
+  syncCat(); syncDir(); syncOptBar(); syncInputEnabled();
+  savePrefs();
+  recompute();
+}
+Array.prototype.forEach.call(document.querySelectorAll('#catBar .catbtn'), function (b) {
+  b.addEventListener('click', function () { setCat(b.getAttribute('data-cat')); });
+});
+dirBtn.addEventListener('click', function () {
+  if (!DIR_MODES[prefs.mode]) return;
+  prefs.dir = prefs.dir === 'enc' ? 'dec' : 'enc';
+  syncDir(); savePrefs(); recompute();
+});
+Array.prototype.forEach.call(document.querySelectorAll('.phead .tab'), function (b) {
+  b.addEventListener('click', function () { setTab(b.getAttribute('data-tab')); });
+});
+function setTab(t) {
+  prefs.tab = t;
+  Array.prototype.forEach.call(document.querySelectorAll('.phead .tab'), function (b) {
+    b.classList.toggle('on', b.getAttribute('data-tab') === t);
+  });
+  $('bodyOut').classList.toggle('on', t === 'out');
+  $('bodyInfo').classList.toggle('on', t === 'info');
+  savePrefs();
+}
+
+optBar.addEventListener('input', function () { savePrefs(); recompute(); });
+optBar.addEventListener('change', function () { savePrefs(); recompute(); });
+
+var reTimer = 0;
+ta.addEventListener('input', function () {
+  clearTimeout(reTimer);
+  $('inCount').textContent = ta.value.length + ' 字符';
+  savePrefs();
+  reTimer = setTimeout(recompute, 160);
+});
+
+/* ---------- 拖入文本文件 ---------- */
+function acceptDrop(e) {
+  var f = e.dataTransfer && e.dataTransfer.files && e.dataTransfer.files[0];
+  if (!f) return;
+  if (f.size > FILE_MAX) { toast('文件 ' + (f.size / 1048576).toFixed(1) + ' MB 超过 4 MB 上限'); return; }
+  var r = new FileReader();
+  r.onload = function () {
+    var s = String(r.result || '');
+    if (s.indexOf('\u0000') >= 0) { toast('看起来是二进制文件，只接受文本'); return; }
+    ta.value = s;
+    savePrefs();
+    recompute();
+    toast('已载入 ' + f.name);
+  };
+  r.onerror = function () { toast('读取失败'); };
+  r.readAsText(f, 'utf-8');
+}
+document.addEventListener('dragover', function (e) { e.preventDefault(); });
+document.addEventListener('drop', function (e) { e.preventDefault(); acceptDrop(e); });
+
+/* ---------- 弹层 ---------- */
+function togglePop(pop, btn) {
+  var on = pop.classList.contains('show');
+  closePops();
+  if (on) return;
+  pop.classList.add('show');
+  var r = btn.getBoundingClientRect();
+  var w = pop.offsetWidth;
+  pop.style.top = (r.bottom + 6) + 'px';
+  pop.style.left = Math.max(8, Math.min(window.innerWidth - w - 8, r.right - w)) + 'px';
+}
+function closePops() {
+  helpPop.classList.remove('show');
+}
+$('helpBtn').addEventListener('click', function () { togglePop(helpPop, $('helpBtn')); });
+document.addEventListener('mousedown', function (e) {
+  if (!helpPop.classList.contains('show')) return;
+  if (helpPop.contains(e.target) || e.target === $('helpBtn')) return;
+  closePops();
+});
+
+/* ---------- 快捷键 ---------- */
+document.addEventListener('keydown', function (e) {
+  var typing = /^(INPUT|TEXTAREA|SELECT)$/.test(document.activeElement && document.activeElement.tagName);
+  if (e.key === 'Escape') { closePops(); return; }
+  if (e.ctrlKey && e.shiftKey && (e.key === 'C' || e.key === 'c')) { e.preventDefault(); copyText(lastOut, '结果已复制'); return; }
+  if (e.ctrlKey && !e.shiftKey && e.key === 'Enter') { e.preventDefault(); recompute(); toast('已重新计算'); return; }
+  if (e.ctrlKey && (e.key === 's' || e.key === 'S')) { e.preventDefault(); $('dlBtn').click(); return; }
+  if (e.ctrlKey && (e.key === 'k' || e.key === 'K')) { e.preventDefault(); ta.focus(); ta.select(); return; }
+  if (e.altKey && ['1', '2', '3', '4'].indexOf(e.key) >= 0) {
+    e.preventDefault();
+    setCat(['enc', 'hash', 'jwt', 'rand'][parseInt(e.key, 10) - 1]);
+    return;
+  }
+  if (e.key === ' ' && !typing && DIR_MODES[prefs.mode]) {
+    e.preventDefault();
+    prefs.dir = prefs.dir === 'enc' ? 'dec' : 'enc';
+    syncDir(); savePrefs(); recompute();
+  }
+});
+
+/* ===================== 启动 ===================== */
+loadPrefs();
+applyOptIds(prefs.opts);
+ta.value = prefs.input || '';
+buildModeBar();
+syncCat();
+syncDir();
+syncOptBar();
+syncInputEnabled();
+setTab(prefs.tab === 'info' ? 'info' : 'out');
+recompute();
+
+})();
+</script>
+</body>
+</html>
