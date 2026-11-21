@@ -1,0 +1,1239 @@
+<!DOCTYPE html>
+<html lang="zh-CN">
+<head>
+<meta charset="UTF-8">
+<meta name="viewport" content="width=device-width, initial-scale=1.0">
+<title>时间计算台 · Time Desk</title>
+<style>
+  :root {
+    --bg: #1b1d21;
+    --bg2: #23262b;
+    --bg3: #2b2f36;
+    --line: #383d45;
+    --fg: #d8dde5;
+    --fg-dim: #8b93a1;
+    --accent: #4c8dff;
+    --hit: #ffc861;
+    --grp: #9b7bff;
+    --err: #f07f76;
+    --ok: #57c26b;
+  }
+  * { box-sizing: border-box; }
+  html, body { height: 100%; margin: 0; }
+  body {
+    background: var(--bg); color: var(--fg);
+    font: 13px/1.6 "Segoe UI", "Microsoft YaHei", system-ui, sans-serif;
+    display: flex; flex-direction: column; overflow: hidden;
+  }
+  .mono, input, select, .num { font-family: "Cascadia Code", "JetBrains Mono", Consolas, "Courier New", monospace; }
+
+  /* ---------- 标题栏 ---------- */
+  .titlebar {
+    display: flex; align-items: center; gap: 10px;
+    height: 40px; padding: 0 12px; flex: none;
+    background: var(--bg2); border-bottom: 1px solid var(--line);
+  }
+  .logo {
+    width: 22px; height: 22px; border-radius: 5px; flex: none;
+    background: linear-gradient(135deg, #4c8dff, #7b5cff);
+    display: grid; place-items: center; font-size: 12px;
+  }
+  .titlebar h1 { font-size: 14px; margin: 0; font-weight: 600; letter-spacing: .3px; }
+  .titlebar .sub { color: var(--fg-dim); font-size: 12px; }
+  .titlebar .sp { flex: 1; }
+  .chip {
+    font-size: 12px; color: var(--fg-dim); padding: 3px 10px;
+    border: 1px solid var(--line); border-radius: 20px; white-space: nowrap;
+  }
+  .chip b { color: var(--fg); font-weight: 600; }
+  .chip b.no { color: var(--err); }
+  .chip b.run { color: var(--ok); }
+
+  /* ---------- 标签页 ---------- */
+  .tabs {
+    display: flex; align-items: center; gap: 2px; flex: none;
+    padding: 0 12px; background: var(--bg2); border-bottom: 1px solid var(--line);
+  }
+  .tabs .tab {
+    border: 0; background: transparent; color: var(--fg-dim);
+    padding: 9px 14px; font-size: 13px; border-radius: 0;
+    border-bottom: 2px solid transparent; cursor: pointer;
+  }
+  .tabs .tab:hover { background: var(--bg3); color: var(--fg); }
+  .tabs .tab.on { color: var(--fg); border-bottom-color: var(--accent); font-weight: 600; }
+  .tabs .sp { flex: 1; }
+
+  button, select, input {
+    background: var(--bg3); color: var(--fg); border: 1px solid var(--line);
+    border-radius: 5px; padding: 5px 11px; font-size: 12px; cursor: pointer;
+    font-family: inherit;
+  }
+  input[type=number], input[type=text], input[type=datetime-local], input[type=time] { cursor: text; }
+  button:hover:not(:disabled), select:hover { border-color: #4a515c; background: #333842; }
+  button:disabled { opacity: .4; cursor: not-allowed; }
+  button.primary { background: #2c4a78; border-color: #3f6fb5; color: #dbe8ff; }
+  button.primary:hover:not(:disabled) { background: #355685; border-color: #4c8dff; }
+  button.big { padding: 9px 22px; font-size: 14px; font-weight: 600; }
+  button.on { background: #2c4a78; border-color: #4c8dff; color: #cfe0ff; }
+  button.mini { padding: 2px 8px; font-size: 11px; }
+
+  /* ---------- 主体 ---------- */
+  main { flex: 1; min-height: 0; overflow: auto; }
+  .view { display: none; padding: 18px 20px 40px; max-width: 980px; margin: 0 auto; }
+  .view.on { display: block; }
+
+  .card {
+    background: var(--bg2); border: 1px solid var(--line);
+    border-radius: 10px; padding: 18px 20px; margin-bottom: 14px;
+  }
+  .card h3 {
+    margin: 0 0 14px; font-size: 13px; font-weight: 600; color: var(--fg);
+    display: flex; align-items: center; gap: 8px;
+  }
+  .card h3::before {
+    content: ''; width: 3px; height: 13px; border-radius: 2px;
+    background: var(--accent); flex: none;
+  }
+  .row { display: flex; align-items: center; gap: 10px; flex-wrap: wrap; }
+  .row + .row { margin-top: 12px; }
+  .lbl { color: var(--fg-dim); font-size: 12px; white-space: nowrap; }
+  .hint { color: var(--fg-dim); font-size: 12px; line-height: 1.9; }
+  .grow { flex: 1; }
+
+  /* ---------- 大数字 ---------- */
+  .clock {
+    font-family: "Cascadia Code", "JetBrains Mono", Consolas, monospace;
+    font-size: 76px; line-height: 1.1; font-weight: 200;
+    letter-spacing: 2px; text-align: center; margin: 10px 0 4px;
+    font-variant-numeric: tabular-nums;
+    transition: color .25s;
+  }
+  .clock.small { font-size: 56px; }
+  .clock.warn { color: var(--hit); }
+  .clock.done { color: var(--ok); }
+  .clock.idle { color: var(--fg-dim); }
+  .phase {
+    text-align: center; font-size: 13px; color: var(--fg-dim);
+    letter-spacing: 1px; margin-bottom: 16px; min-height: 22px;
+  }
+  .phase b { color: var(--accent); font-weight: 600; }
+  .phase b.work { color: var(--hit); }
+  .phase b.rest { color: var(--ok); }
+
+  /* ---------- 进度环 ---------- */
+  .ringwrap { display: grid; place-items: center; position: relative; }
+  .ringwrap svg { display: block; }
+  .ringwrap .clock { position: absolute; margin: 0; }
+
+  /* ---------- 轮次点 ---------- */
+  .dots { display: flex; gap: 7px; justify-content: center; margin: 14px 0 4px; }
+  .dots i {
+    width: 9px; height: 9px; border-radius: 50%;
+    background: var(--bg3); border: 1px solid var(--line); display: block;
+  }
+  .dots i.done { background: var(--hit); border-color: var(--hit); }
+  .dots i.now { background: var(--accent); border-color: var(--accent); box-shadow: 0 0 0 3px rgba(76,141,255,.2); }
+
+  /* ---------- 结果表 ---------- */
+  table.res { width: 100%; border-collapse: collapse; font-size: 13px; }
+  table.res td { padding: 7px 10px; border-bottom: 1px solid #2a2e34; }
+  table.res td.k { color: var(--accent); width: 150px; white-space: nowrap; }
+  table.res td.v { font-family: "Cascadia Code", "JetBrains Mono", Consolas, monospace; word-break: break-all; }
+  table.res td.v b { color: var(--fg); font-weight: 600; }
+  table.res tr:last-child td { border-bottom: 0; }
+
+  .bigres {
+    font-family: "Cascadia Code", "JetBrains Mono", Consolas, monospace;
+    font-size: 26px; color: var(--fg); text-align: center;
+    padding: 10px 0 16px; font-variant-numeric: tabular-nums;
+  }
+  .bigres .u { color: var(--fg-dim); font-size: 15px; margin: 0 4px 0 2px; }
+
+  /* ---------- 错误条 ---------- */
+  #err {
+    display: none; flex: none; align-items: flex-start; gap: 8px;
+    padding: 7px 12px; font-size: 12px; max-height: 92px; overflow: auto;
+    background: rgba(240, 127, 118, .14); border-bottom: 1px solid rgba(240, 127, 118, .45);
+    color: #ffc9c4; white-space: pre-wrap; word-break: break-word;
+  }
+  #err.show { display: flex; }
+  #err b { color: #fff; }
+
+  /* ---------- 状态栏 ---------- */
+  footer {
+    display: flex; align-items: center; gap: 12px; flex: none;
+    height: 26px; padding: 0 12px; background: var(--bg2);
+    border-top: 1px solid var(--line); font-size: 12px; color: var(--fg-dim);
+    white-space: nowrap; overflow: hidden;
+  }
+  footer .sp { flex: 1; }
+  footer b { color: var(--fg); font-weight: 600; }
+  footer .bad { color: var(--err); }
+  footer .good { color: var(--ok); }
+
+  /* ---------- 弹出面板 ---------- */
+  .pop {
+    position: fixed; z-index: 60; background: var(--bg2);
+    border: 1px solid var(--line); border-radius: 8px;
+    box-shadow: 0 12px 36px rgba(0, 0, 0, .55);
+    padding: 12px 14px; width: 520px; display: none;
+    max-height: 78vh; overflow: auto;
+  }
+  .pop.show { display: block; }
+  .pop h3 { margin: 0 0 8px; font-size: 13px; }
+  .pop h4 { margin: 12px 0 4px; font-size: 12px; color: var(--accent); }
+  .pop p, .pop li { font-size: 12px; color: var(--fg-dim); margin: 4px 0; line-height: 1.75; }
+  .pop ul { margin: 0; padding-left: 18px; }
+  .pop kbd {
+    background: var(--bg3); border: 1px solid var(--line); border-bottom-width: 2px;
+    border-radius: 4px; padding: 0 5px; font-size: 11px; color: var(--fg);
+  }
+  .pop code { background: var(--bg3); border-radius: 3px; padding: 0 4px; color: #cfe0ff; font-size: 11px; }
+
+  /* ---------- Toast ---------- */
+  #toast {
+    position: fixed; left: 50%; bottom: 46px; transform: translateX(-50%) translateY(12px);
+    background: #2f343c; border: 1px solid var(--line); color: var(--fg);
+    padding: 7px 14px; border-radius: 6px; font-size: 12px;
+    box-shadow: 0 8px 24px rgba(0, 0, 0, .5);
+    opacity: 0; pointer-events: none; transition: opacity .18s, transform .18s; z-index: 90;
+  }
+  #toast.show { opacity: 1; transform: translateX(-50%) translateY(0); }
+
+  @media (max-width: 760px) {
+    .clock { font-size: 54px; }
+    .clock.small { font-size: 42px; }
+    .view { padding: 14px 12px 30px; }
+    .pop { width: calc(100vw - 24px); }
+    table.res td.k { width: 104px; font-size: 12px; }
+  }
+</style>
+</head>
+<body>
+
+<div class="titlebar">
+  <div class="logo">时</div>
+  <h1>时间计算台</h1>
+  <span class="sub">番茄钟 · 倒计时 · 时间差 · 日期推算</span>
+  <span class="sp"></span>
+  <span class="chip" id="capChip">就绪</span>
+</div>
+
+<div class="tabs">
+  <button class="tab on" data-view="pomo">番茄钟</button>
+  <button class="tab" data-view="timer">倒计时</button>
+  <button class="tab" data-view="diff">时间差</button>
+  <button class="tab" data-view="date">日期推算</button>
+  <span class="sp"></span>
+  <button id="helpBtn" style="border:0;background:transparent;color:var(--fg-dim);padding:6px 10px">帮助</button>
+</div>
+
+<div id="err"></div>
+
+<main>
+
+  <!-- ================= 番茄钟 ================= -->
+  <section class="view on" id="vPomo">
+    <div class="card">
+      <div class="ringwrap">
+        <svg width="240" height="240" viewBox="0 0 240 240">
+          <circle cx="120" cy="120" r="108" fill="none" stroke="#2b2f36" stroke-width="8"></circle>
+          <circle id="ring" cx="120" cy="120" r="108" fill="none" stroke="#4c8dff" stroke-width="8"
+                  stroke-linecap="round" transform="rotate(-90 120 120)"
+                  stroke-dasharray="678.58" stroke-dashoffset="0"
+                  style="transition: stroke-dashoffset .25s linear, stroke .3s"></circle>
+        </svg>
+        <div class="clock small" id="pomoClock">25:00</div>
+      </div>
+      <div class="phase" id="pomoPhase">专注时段 <b class="work">1 / 4</b></div>
+      <div class="dots" id="pomoDots"></div>
+      <div class="row" style="justify-content:center;margin-top:16px">
+        <button class="primary big" id="pomoStart">开始</button>
+        <button class="big" id="pomoSkip" title="跳过当前时段直接进入下一个">跳过</button>
+        <button class="big" id="pomoReset">重置</button>
+      </div>
+    </div>
+
+    <div class="card">
+      <h3>时长设置（分钟）</h3>
+      <div class="row">
+        <span class="lbl">专注</span>
+        <input type="number" id="pomoWork" min="1" max="180" step="1" value="25" style="width:70px">
+        <span class="lbl">短休</span>
+        <input type="number" id="pomoShort" min="1" max="60" step="1" value="5" style="width:70px">
+        <span class="lbl">长休</span>
+        <input type="number" id="pomoLong" min="1" max="120" step="1" value="15" style="width:70px">
+        <span class="lbl">长休间隔</span>
+        <input type="number" id="pomoEvery" min="2" max="12" step="1" value="4" style="width:60px">
+        <span class="lbl">轮</span>
+      </div>
+      <div class="row">
+        <label class="lbl" style="display:flex;align-items:center;gap:5px;cursor:pointer">
+          <input type="checkbox" id="pomoAuto" checked style="width:13px;height:13px;padding:0"> 时段结束自动进入下一段
+        </label>
+        <label class="lbl" style="display:flex;align-items:center;gap:5px;cursor:pointer">
+          <input type="checkbox" id="pomoBeep" checked style="width:13px;height:13px;padding:0"> 提示音
+        </label>
+        <label class="lbl" style="display:flex;align-items:center;gap:5px;cursor:pointer">
+          <input type="checkbox" id="pomoTitle" checked style="width:13px;height:13px;padding:0"> 标题栏显示剩余
+        </label>
+      </div>
+      <div class="row"><span class="hint" id="pomoHint">改完时长点「重置」生效，正在计时不会被打断。</span></div>
+    </div>
+  </section>
+
+  <!-- ================= 倒计时 ================= -->
+  <section class="view" id="vTimer">
+    <div class="card">
+      <div class="clock" id="timerClock">00:05:00</div>
+      <div class="phase" id="timerPhase">未开始</div>
+      <div class="row" style="justify-content:center;margin-top:8px">
+        <button class="primary big" id="timerStart">开始</button>
+        <button class="big" id="timerReset">重置</button>
+      </div>
+    </div>
+
+    <div class="card">
+      <h3>时长</h3>
+      <div class="row">
+        <span class="lbl">时</span>
+        <input type="number" id="tH" min="0" max="99" step="1" value="0" style="width:64px">
+        <span class="lbl">分</span>
+        <input type="number" id="tM" min="0" max="59" step="1" value="5" style="width:64px">
+        <span class="lbl">秒</span>
+        <input type="number" id="tS" min="0" max="59" step="1" value="0" style="width:64px">
+        <div class="grow"></div>
+        <button class="mini" data-preset="60">1 分钟</button>
+        <button class="mini" data-preset="180">3 分钟</button>
+        <button class="mini" data-preset="300">5 分钟</button>
+        <button class="mini" data-preset="600">10 分钟</button>
+        <button class="mini" data-preset="1800">30 分钟</button>
+      </div>
+      <div class="row">
+        <label class="lbl" style="display:flex;align-items:center;gap:5px;cursor:pointer">
+          <input type="checkbox" id="timerBeep" checked style="width:13px;height:13px;padding:0"> 提示音
+        </label>
+        <label class="lbl" style="display:flex;align-items:center;gap:5px;cursor:pointer">
+          <input type="checkbox" id="timerTitle" checked style="width:13px;height:13px;padding:0"> 标题栏显示剩余
+        </label>
+        <span class="hint">倒计时按真实时间计算，切到后台或锁屏也不会走慢。</span>
+      </div>
+    </div>
+
+    <div class="card">
+      <h3>到点时间</h3>
+      <div class="row">
+        <span class="lbl">从现在起</span>
+        <span id="timerEta" class="mono" style="color:var(--fg)">—</span>
+      </div>
+    </div>
+  </section>
+
+  <!-- ================= 时间差 ================= -->
+  <section class="view" id="vDiff">
+    <div class="card">
+      <h3>两个时间点之间</h3>
+      <div class="row">
+        <span class="lbl">开始</span>
+        <input type="datetime-local" id="diffA" step="1" style="width:214px">
+        <span class="lbl">结束</span>
+        <input type="datetime-local" id="diffB" step="1" style="width:214px">
+        <div class="grow"></div>
+        <button id="diffNow" title="把结束设为此刻">结束=此刻</button>
+      </div>
+      <div class="row">
+        <button class="mini" data-diff="today">今天 00:00 → 现在</button>
+        <button class="mini" data-diff="month">本月 1 日 → 现在</button>
+        <button class="mini" data-diff="year">今年 1 月 1 日 → 现在</button>
+        <button class="mini" data-diff="swap">交换两端</button>
+      </div>
+    </div>
+
+    <div class="card">
+      <div class="bigres" id="diffBig">—</div>
+      <table class="res" id="diffTable"></table>
+    </div>
+  </section>
+
+  <!-- ================= 日期推算 ================= -->
+  <section class="view" id="vDate">
+    <div class="card">
+      <h3>基准时间</h3>
+      <div class="row">
+        <input type="datetime-local" id="dateBase" step="1" style="width:214px">
+        <button id="dateNow">设为此刻</button>
+        <div class="grow"></div>
+        <span class="hint" id="dateWeekday">—</span>
+      </div>
+    </div>
+
+    <div class="card">
+      <h3>加减</h3>
+      <div class="row">
+        <select id="dateOp">
+          <option value="1" selected>之后</option>
+          <option value="-1">之前</option>
+        </select>
+        <input type="number" id="dateN" value="30" min="0" max="100000" step="1" style="width:90px">
+        <select id="dateUnit">
+          <option value="day" selected>天</option>
+          <option value="week">周</option>
+          <option value="month">个月</option>
+          <option value="year">年</option>
+          <option value="hour">小时</option>
+          <option value="minute">分钟</option>
+          <option value="second">秒</option>
+          <option value="workday">工作日</option>
+        </select>
+        <div class="grow"></div>
+        <button class="primary" id="dateCalc">计算</button>
+      </div>
+      <div class="row">
+        <span class="hint">「工作日」跳过周六周日，不含法定节假日调休。</span>
+      </div>
+    </div>
+
+    <div class="card">
+      <div class="bigres" id="dateBig">—</div>
+      <table class="res" id="dateTable"></table>
+    </div>
+  </section>
+
+</main>
+
+<footer>
+  <span id="stMain">就绪</span>
+  <span class="sp"></span>
+  <span id="stRight"></span>
+</footer>
+
+<div class="pop" id="helpPop">
+  <h3>时间计算台 · 使用说明</h3>
+  <h4>四个分区</h4>
+  <ul>
+    <li><b>番茄钟</b>：专注 / 短休 / 长休三段循环，默认 25 / 5 / 15，每 4 轮一次长休。时段结束自动进入下一段，可关。</li>
+    <li><b>倒计时</b>：自定义时分秒，到点提示；实时给出「到点时刻」。</li>
+    <li><b>时间差</b>：两个时间点之间差多少，拆成天 / 时 / 分 / 秒，并给出总小时、总分钟、工作日数。</li>
+    <li><b>日期推算</b>：基准时间加减天 / 周 / 月 / 年 / 小时 / 分钟 / 秒 / 工作日。</li>
+  </ul>
+  <h4>计时准确性</h4>
+  <ul>
+    <li>所有计时都基于 <code>Date.now()</code> 的时间戳差值，<b>不是靠 setInterval 累加</b>。浏览器把后台标签页的定时器降频到每分钟一次时，累加式计时会越走越慢，本工具不会。</li>
+    <li>切回标签页时立即重算并刷新显示，不会出现「显示 3 分钟实际已过 5 分钟」。</li>
+    <li>计时状态只存在内存里，<b>刷新页面即丢</b>。跨页面的持续计时需要浏览器通知权限与 Service Worker，超出单文件工具的范围。</li>
+  </ul>
+  <h4>能力边界</h4>
+  <ul>
+    <li><b>提示音是现场合成的</b>：Web Audio 振荡器按音符序列发声，不加载任何音频文件，因此离线可用。浏览器要求首次交互后才能出声，点过「开始」即满足。</li>
+    <li><b>不做法定节假日</b>：「工作日」只跳过周六周日，不识别春节 / 国庆与调休。要精确排班请用专门的日历库。</li>
+    <li><b>月份加减按自然月</b>：1 月 31 日加 1 个月得到 2 月 28 / 29 日（自动收口到月末），不会溢出成 3 月 3 日。</li>
+    <li><b>不处理时区</b>：全部按本机本地时区计算，不做 UTC 转换、不显示其他时区。</li>
+    <li><b>不写 localStorage</b>：时长设置与勾选项每次打开都是默认值，避免「上次设成 90 分钟忘了改」。</li>
+  </ul>
+  <h4>快捷键</h4>
+  <ul>
+    <li><kbd>Space</kbd> 开始 / 暂停当前计时</li>
+    <li><kbd>R</kbd> 重置当前计时</li>
+    <li><kbd>1</kbd>~<kbd>4</kbd> 切换分区</li>
+    <li><kbd>Esc</kbd> 关闭本面板</li>
+  </ul>
+  <h4>隐私</h4>
+  <p>零网络请求，无外部 CSS / JS / 字体 / 音频，<code>file://</code> 双击即可用。不读日历、不读定位、不申请任何权限，所有计算只在内存中完成，关掉页面即清空。</p>
+</div>
+
+<div id="toast"></div>
+
+<script>
+'use strict';
+
+/* ============================== 常量 ============================== */
+
+var TICK_MS = 200;              // 刷新间隔（显示用，不影响精度）
+var RING_R = 108;
+var RING_LEN = 2 * Math.PI * RING_R;
+var SOUND_TAIL = 1.2;           // 提示音总时长（秒）
+
+/* ============================== 工具函数 ============================== */
+
+function $(id) { return document.getElementById(id); }
+
+function pad(n) { return (n < 10 ? '0' : '') + n; }
+
+function toast(msg) {
+  var t = $('toast');
+  t.textContent = msg;
+  t.classList.add('show');
+  clearTimeout(toast._t);
+  toast._t = setTimeout(function () { t.classList.remove('show'); }, 1900);
+}
+
+function showErr(msg) {
+  var e = $('err');
+  if (!msg) { e.classList.remove('show'); e.textContent = ''; return; }
+  e.textContent = msg;
+  e.classList.add('show');
+}
+
+/* 把秒数拆成 时/分/秒，用于倒计时显示 */
+function hms(totalSec) {
+  var s = Math.max(0, Math.floor(totalSec));
+  var h = Math.floor(s / 3600);
+  var m = Math.floor((s % 3600) / 60);
+  var sec = s % 60;
+  return { h: h, m: m, s: sec };
+}
+
+function fmtClock(totalSec) {
+  var t = hms(totalSec);
+  return t.h > 0
+    ? pad(t.h) + ':' + pad(t.m) + ':' + pad(t.s)
+    : pad(t.m) + ':' + pad(t.s);
+}
+
+function fmtClockFull(totalSec) {
+  var t = hms(totalSec);
+  return pad(t.h) + ':' + pad(t.m) + ':' + pad(t.s);
+}
+
+/* 把毫秒差拆成 天/时/分/秒 */
+function splitMs(ms) {
+  var neg = ms < 0;
+  var abs = Math.abs(Math.floor(ms / 1000));
+  var d = Math.floor(abs / 86400);
+  var h = Math.floor((abs % 86400) / 3600);
+  var m = Math.floor((abs % 3600) / 60);
+  var s = abs % 60;
+  return { neg: neg, d: d, h: h, m: m, s: s, totalSec: abs };
+}
+
+/* ---------- 提示音（Web Audio 现场合成，零外部文件） ---------- */
+
+var audioCtx = null;
+
+function beep(kind) {
+  try {
+    if (!audioCtx) {
+      var AC = window.AudioContext || window.webkitAudioContext;
+      if (!AC) return false;
+      audioCtx = new AC();
+    }
+    if (audioCtx.state === 'suspended') audioCtx.resume();
+
+    // 专注结束：上行三音；休息结束：下行两音；倒计时到点：单音重复三次
+    var seq;
+    if (kind === 'work') {
+      seq = [[880, 0.00, 0.16], [1108.7, 0.22, 0.16], [1318.5, 0.44, 0.34]];
+    } else if (kind === 'rest') {
+      seq = [[987.8, 0.00, 0.18], [659.3, 0.24, 0.40]];
+    } else {
+      seq = [[1046.5, 0.00, 0.16], [1046.5, 0.28, 0.16], [1568.0, 0.56, 0.42]];
+    }
+
+    var t0 = audioCtx.currentTime + 0.02;
+    for (var i = 0; i < seq.length; i++) {
+      var f = seq[i][0], at = seq[i][1], dur = seq[i][2];
+      var osc = audioCtx.createOscillator();
+      var g = audioCtx.createGain();
+      osc.type = 'sine';
+      osc.frequency.value = f;
+      // 起音 8ms 淡入、尾音指数衰减，避免爆音
+      g.gain.setValueAtTime(0.0001, t0 + at);
+      g.gain.exponentialRampToValueAtTime(0.32, t0 + at + 0.008);
+      g.gain.exponentialRampToValueAtTime(0.0001, t0 + at + dur);
+      osc.connect(g);
+      g.connect(audioCtx.destination);
+      osc.start(t0 + at);
+      osc.stop(t0 + at + dur + 0.02);
+    }
+    return true;
+  } catch (e) {
+    return false;
+  }
+}
+
+/* 首次用户交互时解锁音频上下文 */
+function unlockAudio() {
+  try {
+    var AC = window.AudioContext || window.webkitAudioContext;
+    if (!AC) return;
+    if (!audioCtx) audioCtx = new AC();
+    if (audioCtx.state === 'suspended') audioCtx.resume();
+  } catch (e) { /* 静默 */ }
+}
+
+/* ============================== 分区切换 ============================== */
+
+var curView = 'pomo';
+
+function setView(v) {
+  curView = v;
+  var tabs = document.querySelectorAll('.tab');
+  for (var i = 0; i < tabs.length; i++) {
+    tabs[i].classList.toggle('on', tabs[i].getAttribute('data-view') === v);
+  }
+  var views = document.querySelectorAll('.view');
+  for (var j = 0; j < views.length; j++) {
+    views[j].classList.toggle('on', views[j].id === 'v' + v.charAt(0).toUpperCase() + v.slice(1));
+  }
+  showErr('');
+  updateChip();
+  updateTitle();
+}
+
+/* ============================== 番茄钟 ============================== */
+
+var pomo = {
+  phase: 'work',        // work | short | long
+  round: 1,             // 当前第几轮专注（从 1 开始）
+  running: false,
+  totalMs: 0,           // 本时段总时长
+  endAt: 0,             // 结束时间戳
+  leftMs: 0             // 暂停时保留的剩余
+};
+
+function pomoDurations() {
+  return {
+    work: Math.max(1, +$('pomoWork').value || 25) * 60000,
+    short: Math.max(1, +$('pomoShort').value || 5) * 60000,
+    long: Math.max(1, +$('pomoLong').value || 15) * 60000,
+    every: Math.max(2, +$('pomoEvery').value || 4)
+  };
+}
+
+function pomoPhaseName(p) {
+  return p === 'work' ? '专注时段' : p === 'short' ? '短休息' : '长休息';
+}
+
+function pomoSetPhase(phase, keepRound) {
+  var d = pomoDurations();
+  pomo.phase = phase;
+  if (!keepRound) { /* 轮次由调用方决定 */ }
+  pomo.totalMs = d[phase];
+  pomo.leftMs = pomo.totalMs;
+  pomo.running = false;
+  pomo.endAt = 0;
+  pomoRender();
+}
+
+function pomoRender() {
+  var left = pomo.running ? Math.max(0, pomo.endAt - Date.now()) : pomo.leftMs;
+  var secLeft = Math.ceil(left / 1000);
+
+  var clk = $('pomoClock');
+  clk.textContent = fmtClock(secLeft);
+  clk.className = 'clock small' + (pomo.running ? (secLeft <= 10 ? ' warn' : '') : (left <= 0 ? ' done' : ' idle'));
+
+  // 进度环
+  var frac = pomo.totalMs > 0 ? Math.min(1, Math.max(0, left / pomo.totalMs)) : 0;
+  var ring = $('ring');
+  ring.setAttribute('stroke-dashoffset', String(RING_LEN * (1 - frac)));
+  ring.setAttribute('stroke', pomo.phase === 'work' ? '#ffc861' : '#57c26b');
+
+  // 阶段文字
+  var d = pomoDurations();
+  var ph = $('pomoPhase');
+  var cls = pomo.phase === 'work' ? 'work' : 'rest';
+  if (pomo.phase === 'work') {
+    ph.innerHTML = '专注时段 <b class="' + cls + '">' + pomo.round + ' / ' + d.every + '</b>';
+  } else {
+    ph.innerHTML = pomoPhaseName(pomo.phase) + ' <b class="' + cls + '">第 ' + pomo.round + ' 轮已完成</b>';
+  }
+
+  // 轮次点
+  var dots = $('pomoDots');
+  var want = d.every;
+  if (dots.childElementCount !== want) {
+    dots.innerHTML = '';
+    for (var i = 0; i < want; i++) dots.appendChild(document.createElement('i'));
+  }
+  for (var k = 0; k < want; k++) {
+    var dot = dots.children[k];
+    dot.className = '';
+    if (pomo.phase === 'work') {
+      // 专注中：已完成的轮次实心，当前轮高亮
+      if (k < pomo.round - 1) dot.className = 'done';
+      else if (k === pomo.round - 1) dot.className = 'now';
+    } else {
+      // 休息中：刚完成的这一轮保持实心，避免进度点全空看不出进度
+      dot.className = k <= pomo.round - 1 ? 'done' : '';
+    }
+  }
+
+  $('pomoStart').textContent = pomo.running ? '暂停' : (pomo.leftMs < pomo.totalMs ? '继续' : '开始');
+
+  updateChip();
+  updateTitle();
+}
+
+function pomoStart() {
+  if (pomo.running) {
+    // 暂停：把剩余量固化
+    pomo.leftMs = Math.max(0, pomo.endAt - Date.now());
+    pomo.running = false;
+  } else {
+    unlockAudio();
+    if (pomo.leftMs <= 0) pomo.leftMs = pomo.totalMs;
+    pomo.endAt = Date.now() + pomo.leftMs;
+    pomo.running = true;
+  }
+  pomoRender();
+}
+
+function pomoReset() {
+  pomo.round = 1;
+  pomoSetPhase('work');
+  toast('番茄钟已重置');
+}
+
+function pomoNext(auto) {
+  var d = pomoDurations();
+  var from = pomo.phase;
+
+  if (from === 'work') {
+    // 专注结束 → 判断该短休还是长休
+    var isLong = (pomo.round % d.every) === 0;
+    pomoSetPhase(isLong ? 'long' : 'short');
+  } else {
+    // 休息结束 → 轮次 +1，回到专注
+    pomo.round = pomo.round + 1;
+    if (pomo.round > d.every) pomo.round = 1;
+    pomoSetPhase('work');
+  }
+
+  if (auto && $('pomoAuto').checked) {
+    pomo.endAt = Date.now() + pomo.totalMs;
+    pomo.running = true;
+  }
+  pomoRender();
+}
+
+function pomoSkip() {
+  pomoNext(false);
+  toast('已跳到「' + pomoPhaseName(pomo.phase) + '」');
+}
+
+/* 每次 tick 检查是否到点 */
+function pomoTick() {
+  if (!pomo.running) return;
+  var left = pomo.endAt - Date.now();
+  if (left <= 0) {
+    var finished = pomo.phase;
+    pomo.leftMs = 0;
+    pomo.running = false;
+    if ($('pomoBeep').checked) beep(finished === 'work' ? 'work' : 'rest');
+    var msg = finished === 'work' ? '专注时段结束' : '休息结束';
+    toast(msg);
+    $('stMain').textContent = msg + ' · ' + new Date().toLocaleTimeString('zh-CN', { hour12: false });
+    pomoNext(true);
+    return;
+  }
+  pomoRender();
+}
+
+/* ============================== 倒计时 ============================== */
+
+var timer = {
+  running: false,
+  totalMs: 0,
+  endAt: 0,
+  leftMs: 0,
+  done: false
+};
+
+function timerReadInputs() {
+  var h = Math.max(0, Math.min(99, +$('tH').value || 0));
+  var m = Math.max(0, Math.min(59, +$('tM').value || 0));
+  var s = Math.max(0, Math.min(59, +$('tS').value || 0));
+  return ((h * 3600) + (m * 60) + s) * 1000;
+}
+
+function timerRender() {
+  var left = timer.running ? Math.max(0, timer.endAt - Date.now()) : timer.leftMs;
+  var secLeft = Math.ceil(left / 1000);
+
+  var clk = $('timerClock');
+  clk.textContent = fmtClockFull(secLeft);
+  clk.className = 'clock' + (timer.done ? ' done' : timer.running ? (secLeft <= 10 ? ' warn' : '') : ' idle');
+
+  var ph = $('timerPhase');
+  if (timer.done) ph.textContent = '已结束 · ' + new Date().toLocaleTimeString('zh-CN', { hour12: false }) + ' 响铃';
+  else if (timer.running) ph.textContent = '计时中 · 总长 ' + fmtClockFull(Math.round(timer.totalMs / 1000));
+  else if (timer.leftMs < timer.totalMs) ph.textContent = '已暂停 · 剩余 ' + fmtClockFull(secLeft);
+  else ph.textContent = '未开始';
+
+  $('timerStart').textContent = timer.running ? '暂停' : (timer.leftMs < timer.totalMs && timer.leftMs > 0 ? '继续' : '开始');
+
+  // 到点时刻
+  var etaMs = timer.running ? timer.endAt : Date.now() + timer.leftMs;
+  $('timerEta').textContent = timer.leftMs > 0 || timer.running
+    ? new Date(etaMs).toLocaleString('zh-CN', { hour12: false })
+    : '—';
+
+  updateChip();
+  updateTitle();
+}
+
+function timerStart() {
+  if (timer.running) {
+    timer.leftMs = Math.max(0, timer.endAt - Date.now());
+    timer.running = false;
+    timerRender();
+    return;
+  }
+  unlockAudio();
+  if (timer.leftMs <= 0) {
+    var ms = timerReadInputs();
+    if (ms <= 0) { showErr('倒计时时长不能为 0，请填写时 / 分 / 秒。'); return; }
+    showErr('');
+    timer.totalMs = ms;
+    timer.leftMs = ms;
+    timer.done = false;
+  }
+  timer.endAt = Date.now() + timer.leftMs;
+  timer.running = true;
+  timer.done = false;
+  timerRender();
+}
+
+function timerReset() {
+  timer.running = false;
+  timer.done = false;
+  timer.totalMs = timerReadInputs();
+  timer.leftMs = timer.totalMs;
+  timer.endAt = 0;
+  timerRender();
+}
+
+function timerTick() {
+  if (!timer.running) return;
+  var left = timer.endAt - Date.now();
+  if (left <= 0) {
+    timer.leftMs = 0;
+    timer.running = false;
+    timer.done = true;
+    if ($('timerBeep').checked) beep('timer');
+    toast('倒计时结束');
+    $('stMain').textContent = '倒计时结束 · ' + new Date().toLocaleTimeString('zh-CN', { hour12: false });
+    timerRender();
+    return;
+  }
+  timerRender();
+}
+
+/* ============================== 时间差 ============================== */
+
+/* datetime-local 的 value 是本地时间字符串，new Date() 会按本地时区解析 */
+function readLocal(id) {
+  var v = $(id).value;
+  if (!v) return null;
+  var d = new Date(v);
+  return isNaN(d.getTime()) ? null : d;
+}
+
+function toLocalInput(d) {
+  function p(n) { return (n < 10 ? '0' : '') + n; }
+  return d.getFullYear() + '-' + p(d.getMonth() + 1) + '-' + p(d.getDate()) +
+    'T' + p(d.getHours()) + ':' + p(d.getMinutes()) + ':' + p(d.getSeconds());
+}
+
+/* 两个日期之间的工作日数（不含端点，只数中间的周一到周五） */
+function workdaysBetween(a, b) {
+  var start = new Date(a.getFullYear(), a.getMonth(), a.getDate());
+  var end = new Date(b.getFullYear(), b.getMonth(), b.getDate());
+  var sign = 1;
+  if (start > end) { var tmp = start; start = end; end = tmp; sign = -1; }
+  var count = 0;
+  var cur = new Date(start.getTime());
+  while (cur < end) {
+    cur.setDate(cur.getDate() + 1);
+    var wd = cur.getDay();
+    if (wd !== 0 && wd !== 6) count++;
+  }
+  return count * sign;
+}
+
+function diffRender() {
+  var a = readLocal('diffA');
+  var b = readLocal('diffB');
+  var big = $('diffBig');
+  var tbl = $('diffTable');
+
+  if (!a || !b) {
+    big.textContent = '—';
+    tbl.innerHTML = '<tr><td class="k">提示</td><td class="v">请填写开始与结束时间。</td></tr>';
+    return;
+  }
+
+  var ms = b.getTime() - a.getTime();
+  var sp = splitMs(ms);
+
+  // 大字：天/时/分/秒 组合，只显示非零的最大两级
+  var parts = [];
+  if (sp.d) parts.push(sp.d + '<span class="u">天</span>');
+  if (sp.h) parts.push(sp.h + '<span class="u">时</span>');
+  if (sp.m) parts.push(sp.m + '<span class="u">分</span>');
+  if (sp.s || parts.length === 0) parts.push(sp.s + '<span class="u">秒</span>');
+  if (parts.length > 2) parts = parts.slice(0, 2);
+  big.innerHTML = (sp.neg ? '−' : '') + parts.join('');
+
+  var totalSec = sp.totalSec;
+  var totalMin = totalSec / 60;
+  var totalHour = totalSec / 3600;
+  var totalDay = totalSec / 86400;
+
+  var rows = [
+    ['完整差值', (sp.neg ? '−' : '') + (sp.d ? sp.d + ' 天 ' : '') + pad(sp.h) + ' 时 ' + pad(sp.m) + ' 分 ' + pad(sp.s) + ' 秒'],
+    ['总天数', (sp.neg ? '−' : '') + totalDay.toFixed(4) + ' 天'],
+    ['总小时', (sp.neg ? '−' : '') + totalHour.toFixed(2) + ' 小时'],
+    ['总分钟', (sp.neg ? '−' : '') + totalMin.toFixed(0) + ' 分钟'],
+    ['总秒数', (sp.neg ? '−' : '') + totalSec + ' 秒'],
+    ['总毫秒', (sp.neg ? '−' : '') + Math.abs(ms) + ' ms'],
+    ['工作日', (workdaysBetween(a, b) < 0 ? '−' : '') + Math.abs(workdaysBetween(a, b)) + ' 个（跳过周六周日）'],
+    ['周数', (sp.neg ? '−' : '') + (totalDay / 7).toFixed(2) + ' 周'],
+    ['开始是', weekdayName(a) + ' · ' + a.toLocaleString('zh-CN', { hour12: false })],
+    ['结束是', weekdayName(b) + ' · ' + b.toLocaleString('zh-CN', { hour12: false })]
+  ];
+
+  tbl.innerHTML = rows.map(function (r) {
+    return '<tr><td class="k">' + r[0] + '</td><td class="v">' + r[1] + '</td></tr>';
+  }).join('');
+
+  // 结束早于开始时明确提示，不静默给绝对值
+  if (sp.neg) showErr('结束时间早于开始时间，下列结果已按绝对值展示并加 − 号。');
+  else showErr('');
+}
+
+function weekdayName(d) {
+  return '星期' + '日一二三四五六'.charAt(d.getDay());
+}
+
+/* ============================== 日期推算 ============================== */
+
+/* 自然月加减，月末自动收口（1/31 + 1 月 = 2/28 或 2/29） */
+function addMonths(d, n) {
+  var day = d.getDate();
+  var r = new Date(d.getTime());
+  r.setDate(1);
+  r.setMonth(r.getMonth() + n);
+  var last = new Date(r.getFullYear(), r.getMonth() + 1, 0).getDate();
+  r.setDate(Math.min(day, last));
+  return r;
+}
+
+/* 工作日加减：只跳过周六周日 */
+function addWorkdays(d, n) {
+  var r = new Date(d.getTime());
+  var step = n >= 0 ? 1 : -1;
+  var left = Math.abs(n);
+  var guard = 0;
+  while (left > 0) {
+    r.setDate(r.getDate() + step);
+    var wd = r.getDay();
+    if (wd !== 0 && wd !== 6) left--;
+    if (++guard > 400000) break;
+  }
+  return r;
+}
+
+function dateCalc() {
+  var base = readLocal('dateBase');
+  if (!base) { showErr('请先填写基准时间。'); return; }
+  showErr('');
+
+  var op = +$('dateOp').value;
+  var n = Math.max(0, Math.min(100000, +$('dateN').value || 0));
+  var unit = $('dateUnit').value;
+  var signed = n * op;
+
+  var r = new Date(base.getTime());
+  switch (unit) {
+    case 'day': r.setDate(r.getDate() + signed); break;
+    case 'week': r.setDate(r.getDate() + signed * 7); break;
+    case 'month': r = addMonths(base, signed); break;
+    case 'year': r = addMonths(base, signed * 12); break;
+    case 'hour': r.setTime(r.getTime() + signed * 3600000); break;
+    case 'minute': r.setTime(r.getTime() + signed * 60000); break;
+    case 'second': r.setTime(r.getTime() + signed * 1000); break;
+    case 'workday': r = addWorkdays(base, signed); break;
+  }
+
+  var unitName = { day: '天', week: '周', month: '个月', year: '年', hour: '小时', minute: '分钟', second: '秒', workday: '个工作日' }[unit];
+  var dirName = signed >= 0 ? '之后' : '之前';
+
+  $('dateBig').innerHTML = r.getFullYear() + '-' + pad(r.getMonth() + 1) + '-' + pad(r.getDate()) +
+    '<span class="u"> </span>' + pad(r.getHours()) + ':' + pad(r.getMinutes()) + ':' + pad(r.getSeconds());
+
+  var ms = r.getTime() - base.getTime();
+  var sp = splitMs(ms);
+
+  var rows = [
+    ['结果', weekdayName(r) + ' · ' + r.toLocaleString('zh-CN', { hour12: false })],
+    ['ISO 8601', r.toISOString()],
+    ['算式', base.toLocaleDateString('zh-CN') + ' ' + (signed >= 0 ? '+' : '−') + ' ' + Math.abs(n) + ' ' + unitName + '（' + dirName + '）'],
+    ['相距', (sp.neg ? '−' : '') + (sp.d ? sp.d + ' 天 ' : '') + pad(sp.h) + ' 时 ' + pad(sp.m) + ' 分 ' + pad(sp.s) + ' 秒'],
+    ['总天数', (sp.neg ? '−' : '') + (sp.totalSec / 86400).toFixed(2) + ' 天'],
+    ['当年第几天', '第 ' + dayOfYear(r) + ' 天'],
+    ['是否闰年', isLeap(r.getFullYear()) ? '是（' + r.getFullYear() + ' 年 2 月有 29 天）' : '否（' + r.getFullYear() + ' 年 2 月只有 28 天）'],
+    ['当月起止', new Date(r.getFullYear(), r.getMonth(), 1).toLocaleDateString('zh-CN') + ' → ' + new Date(r.getFullYear(), r.getMonth() + 1, 0).toLocaleDateString('zh-CN')],
+    ['所在周', '第 ' + isoWeek(r) + ' 周（ISO 8601）']
+  ];
+
+  $('dateTable').innerHTML = rows.map(function (row) {
+    return '<tr><td class="k">' + row[0] + '</td><td class="v">' + row[1] + '</td></tr>';
+  }).join('');
+
+  $('dateWeekday').textContent = weekdayName(base) + ' · ' + base.toLocaleString('zh-CN', { hour12: false });
+}
+
+function isLeap(y) {
+  return (y % 4 === 0 && y % 100 !== 0) || y % 400 === 0;
+}
+
+function dayOfYear(d) {
+  var start = new Date(d.getFullYear(), 0, 1);
+  return Math.floor((d - start) / 86400000) + 1;
+}
+
+function isoWeek(d) {
+  var t = new Date(d.getFullYear(), d.getMonth(), d.getDate());
+  var day = (t.getDay() + 6) % 7;   // 周一 = 0
+  t.setDate(t.getDate() - day + 3); // 移到本周周四
+  var firstThu = new Date(t.getFullYear(), 0, 4);
+  var fday = (firstThu.getDay() + 6) % 7;
+  firstThu.setDate(firstThu.getDate() - fday + 3);
+  return 1 + Math.round((t - firstThu) / (7 * 86400000));
+}
+
+/* ============================== 标题栏 / 徽标 ============================== */
+
+function updateChip() {
+  var chip = $('capChip');
+  if (curView === 'pomo') {
+    var left = pomo.running ? Math.max(0, pomo.endAt - Date.now()) : pomo.leftMs;
+    chip.innerHTML = pomo.running
+      ? '番茄钟 <b class="run">运行中</b> · 剩余 ' + fmtClock(Math.ceil(left / 1000))
+      : '番茄钟 <b>待机</b>';
+  } else if (curView === 'timer') {
+    var l2 = timer.running ? Math.max(0, timer.endAt - Date.now()) : timer.leftMs;
+    chip.innerHTML = timer.running
+      ? '倒计时 <b class="run">运行中</b> · 剩余 ' + fmtClockFull(Math.ceil(l2 / 1000))
+      : '倒计时 <b>待机</b>';
+  } else if (curView === 'diff') {
+    chip.innerHTML = '时间差 <b>本地计算</b>';
+  } else {
+    chip.innerHTML = '日期推算 <b>本地计算</b>';
+  }
+}
+
+function updateTitle() {
+  var base = '时间计算台 · Time Desk';
+  // 标题栏倒计时的价值在于「不看这个分区时也能看到」，因此不要求当前分区匹配；
+  // 两个计时同时在跑时，优先显示当前分区那一个。
+  var pomoOk = $('pomoTitle').checked && pomo.running;
+  var timerOk = $('timerTitle').checked && timer.running;
+  var wantPomo = false;
+
+  if (pomoOk && timerOk) wantPomo = (curView === 'pomo');
+  else if (pomoOk) wantPomo = true;
+  else wantPomo = false;
+
+  if (wantPomo) {
+    var l = Math.max(0, pomo.endAt - Date.now());
+    document.title = fmtClock(Math.ceil(l / 1000)) + ' · ' + (pomo.phase === 'work' ? '专注' : '休息');
+  } else if (timerOk) {
+    var l2 = Math.max(0, timer.endAt - Date.now());
+    document.title = fmtClockFull(Math.ceil(l2 / 1000)) + ' · 倒计时';
+  } else {
+    document.title = base;
+  }
+}
+
+/* ============================== 主循环 ============================== */
+
+/* 单个 setInterval 驱动两个计时器，全部按时间戳差值算，不累加 */
+function tick() {
+  pomoTick();
+  timerTick();
+}
+
+/* 切回页面时立即刷新，不等下一个 tick */
+document.addEventListener('visibilitychange', function () {
+  if (!document.hidden) {
+    pomoTick();
+    timerTick();
+    updateChip();
+    updateTitle();
+  }
+});
+
+/* ============================== 事件绑定 ============================== */
+
+function bindEvents() {
+  // 分区
+  var tabs = document.querySelectorAll('.tab');
+  for (var i = 0; i < tabs.length; i++) {
+    tabs[i].onclick = (function (btn) {
+      return function () { setView(btn.getAttribute('data-view')); };
+    })(tabs[i]);
+  }
+
+  // 番茄钟
+  $('pomoStart').onclick = pomoStart;
+  $('pomoReset').onclick = pomoReset;
+  $('pomoSkip').onclick = pomoSkip;
+  ['pomoWork', 'pomoShort', 'pomoLong', 'pomoEvery'].forEach(function (id) {
+    $(id).onchange = function () {
+      // 未开始计时时才跟随新时长，正在计时不打断
+      if (!pomo.running && pomo.leftMs === pomo.totalMs) pomoSetPhase(pomo.phase);
+      pomoRender();
+    };
+  });
+  $('pomoEvery').onchange = function () {
+    if (pomo.round > pomoDurations().every) pomo.round = 1;
+    pomoRender();
+  };
+
+  // 倒计时
+  $('timerStart').onclick = timerStart;
+  $('timerReset').onclick = timerReset;
+  ['tH', 'tM', 'tS'].forEach(function (id) {
+    $(id).onchange = function () {
+      if (!timer.running) timerReset();
+    };
+  });
+  var presets = document.querySelectorAll('[data-preset]');
+  for (var p = 0; p < presets.length; p++) {
+    presets[p].onclick = (function (btn) {
+      return function () {
+        var sec = +btn.getAttribute('data-preset');
+        $('tH').value = Math.floor(sec / 3600);
+        $('tM').value = Math.floor((sec % 3600) / 60);
+        $('tS').value = sec % 60;
+        timerReset();
+      };
+    })(presets[p]);
+  }
+
+  // 时间差
+  $('diffA').onchange = diffRender;
+  $('diffB').onchange = diffRender;
+  $('diffNow').onclick = function () {
+    $('diffB').value = toLocalInput(new Date());
+    diffRender();
+  };
+  var dbtns = document.querySelectorAll('[data-diff]');
+  for (var q = 0; q < dbtns.length; q++) {
+    dbtns[q].onclick = (function (btn) {
+      return function () {
+        var kind = btn.getAttribute('data-diff');
+        var now = new Date();
+        if (kind === 'swap') {
+          var a = $('diffA').value, b = $('diffB').value;
+          $('diffA').value = b;
+          $('diffB').value = a;
+          diffRender();
+          return;
+        }
+        var start;
+        if (kind === 'today') start = new Date(now.getFullYear(), now.getMonth(), now.getDate());
+        else if (kind === 'month') start = new Date(now.getFullYear(), now.getMonth(), 1);
+        else start = new Date(now.getFullYear(), 0, 1);
+        $('diffA').value = toLocalInput(start);
+        $('diffB').value = toLocalInput(now);
+        diffRender();
+      };
+    })(dbtns[q]);
+  }
+
+  // 日期推算
+  $('dateBase').onchange = function () {
+    var d = readLocal('dateBase');
+    $('dateWeekday').textContent = d ? weekdayName(d) + ' · ' + d.toLocaleString('zh-CN', { hour12: false }) : '—';
+  };
+  $('dateNow').onclick = function () {
+    var now = new Date();
+    $('dateBase').value = toLocalInput(now);
+    $('dateWeekday').textContent = weekdayName(now) + ' · ' + now.toLocaleString('zh-CN', { hour12: false });
+    dateCalc();
+  };
+  $('dateCalc').onclick = dateCalc;
+  $('dateN').onkeydown = function (e) { if (e.key === 'Enter') dateCalc(); };
+  $('dateUnit').onchange = dateCalc;
+  $('dateOp').onchange = dateCalc;
+
+  // 帮助面板
+  var pop = $('helpPop');
+  $('helpBtn').onclick = function (e) {
+    e.stopPropagation();
+    if (pop.classList.contains('show')) { pop.classList.remove('show'); return; }
+    var r = $('helpBtn').getBoundingClientRect();
+    pop.classList.add('show');
+    pop.style.top = Math.min(r.bottom + 6, window.innerHeight - pop.offsetHeight - 12) + 'px';
+    pop.style.left = Math.max(8, Math.min(r.right - pop.offsetWidth, window.innerWidth - pop.offsetWidth - 12)) + 'px';
+  };
+  document.addEventListener('click', function (e) {
+    if (pop.classList.contains('show') && !pop.contains(e.target) && e.target !== $('helpBtn')) {
+      pop.classList.remove('show');
+    }
+  });
+
+  // 全局快捷键
+  document.addEventListener('keydown', function (e) {
+    var tag = (e.target.tagName || '').toLowerCase();
+    var typing = tag === 'input' || tag === 'select' || tag === 'textarea';
+
+    if (e.key === 'Escape') {
+      if (pop.classList.contains('show')) { pop.classList.remove('show'); return; }
+      return;
+    }
+    if (typing) return;
+
+    if (e.key === ' ') {
+      e.preventDefault();
+      if (curView === 'pomo') pomoStart();
+      else if (curView === 'timer') timerStart();
+      return;
+    }
+    if (e.key === 'r' || e.key === 'R') {
+      if (curView === 'pomo') pomoReset();
+      else if (curView === 'timer') timerReset();
+      return;
+    }
+    if (e.key >= '1' && e.key <= '4') {
+      setView(['pomo', 'timer', 'diff', 'date'][+e.key - 1]);
+    }
+  });
+}
+
+/* ============================== 启动 ============================== */
+
+function boot() {
+  var now = new Date();
+  $('diffA').value = toLocalInput(new Date(now.getFullYear(), now.getMonth(), now.getDate()));
+  $('diffB').value = toLocalInput(now);
+  $('dateBase').value = toLocalInput(now);
+  $('dateWeekday').textContent = weekdayName(now) + ' · ' + now.toLocaleString('zh-CN', { hour12: false });
+
+  // 初始时长
+  var d = pomoDurations();
+  pomo.totalMs = d.work;
+  pomo.leftMs = d.work;
+
+  bindEvents();
+
+  pomoRender();
+  timerReset();
+  diffRender();
+  dateCalc();
+  setView('pomo');
+
+  $('stMain').textContent = '就绪 · 全部计算在本地完成';
+  $('stRight').textContent = '本地时间 ' + now.toLocaleString('zh-CN', { hour12: false });
+
+  setInterval(tick, TICK_MS);
+}
+
+boot();
+</script>
+</body>
+</html>
