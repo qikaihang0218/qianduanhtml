@@ -16,6 +16,8 @@
   - `Worker` + `URL.createObjectURL`（正则测试台的防卡死计算）——`file://` 下实测可用；不可用时工具自动退回主线程同步计算
   - `canvas.toBlob` + `createImageBitmap` + `Image` + `FileReader`（图片压缩台的解码与编码）——`canvas.toBlob` 是**唯一硬依赖**，缺失则无法输出任何图片。`createImageBitmap` 缺失时自动改用 `<img>` 解码；**WebP 能否输出由浏览器决定**，图片压缩台会在标题栏实时标出「WebP 编码 不可用」，此时选 WebP 自动退回 JPEG 而非报错
   - `RegExp` 的 `d` flag / `hasIndices`（正则测试台的捕获组定位）——缺失时仅退化为「拿不到组独立位置」，功能不中断
+  - `document.execCommand('insertText')`（Markdown 双栏编辑器的工具栏插入）——**唯一目的**是保留 `Ctrl+Z` 撤销栈，直接改 `textarea.value` 会清空撤销历史。该命令已废弃但 Chromium / Firefox 仍完整支持；不可用时自动降级为直接赋值，插入功能不中断，仅撤销栈丢失
+  - `navigator.clipboard.writeText`（Markdown 双栏编辑器的「复制 HTML」）——`file://` 下部分浏览器不提供，缺失时自动降级到隐藏 `textarea` + `execCommand('copy')`，仍失败则提示改用「导出 HTML」
 - **配置持久化**：多数工具把偏好写入浏览器 `localStorage`，书架等大数据写入 `IndexedDB`。**清除浏览器站点数据会导致配置与书架丢失**，各篇文档的「数据与隐私」章节列出了确切键名与清除方法。
 
 ## 文档结构约定
@@ -69,8 +71,9 @@
 | 14 | [文件对比](./文件对比.md) | `文件对比.html` | `File Diff · 文件对比工具` | 两份文本的行级 + 词级差异对比，三种查看器，可整块搬运差异、导出 `.diff` | 无 | 无 |
 | 15 | [编码转换台](./编码转换台.md) | `编码转换台.html` | `编码转换台 · Codec Lab` | Base64 / URL / Hex / Unicode / 实体双向转换，MD5 与 SHA 摘要，JWT 本地验签，乱码字节多编码并排解码 | `localStorage` | 无 |
 | 16 | [图片压缩台](./图片压缩台.md) | `图片压缩台.html` | `图片压缩台 · Image Optimizer` | 批量图片压缩与格式转换（JPEG / PNG / WebP），可锁定输出体积上限，结果打成一个 ZIP 下载 | `localStorage` | 无 |
+| 17 | [Markdown 双栏编辑器](./Markdown双栏编辑器.md) | `Markdown双栏编辑器.html` | `Markdown 双栏编辑器 · MD Studio` | 左写右预览的 Markdown 编辑器，自带大纲、标题编号、字数统计，可导出 `.md` / 独立 `.html` / PDF | `localStorage` | 无 |
 
-### 需要联网的两个工具（其余 14 个零外联）
+### 需要联网的两个工具（其余 15 个零外联）
 
 | 工具 | 外联内容 | 断网表现 |
 | ---- | ---- | ---- |
@@ -117,6 +120,9 @@
 
 **压图片 / 转图片格式 / 一定要压到某个 KB 以内**
 → [图片压缩台](./图片压缩台.md)。批量压缩 + JPEG / PNG / WebP 互转 + 目标体积上限 + ZIP 打包。透明图自动采样识别并可填底色，大比例缩放走逐级减半降采样不糊。单次上限 200 张、单文件 50 MB。**不保留 EXIF**（含 GPS、拍摄时间），要留元数据请用 ImageMagick。
+
+**写 Markdown / 把 `.md` 转成能发出去的网页**
+→ [Markdown 双栏编辑器](./Markdown双栏编辑器.md)。左写右预览、大纲导航、标题自动编号、字数统计，导出 `.md` / 独立 `.html` / PDF。工具栏操作走 `execCommand` 保留 `Ctrl+Z`，列表回车自动续号、空项回车退出列表。原始 HTML 默认关闭，不注入脚本。**不是完整 CommonMark**，脚注 / 公式 / Mermaid 不支持。
 
 **做设计取色、出渐变 CSS**
 → [颜色选择器](./颜色选择器.md)
